@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0d0d1a">
 <title>Лютые пляжники !! King of the Court</title>
 <link rel="manifest" href="manifest.json">
@@ -19,15 +19,25 @@
   --dark:#0d0d1a;--dark2:#13131f;--dark3:#1a1a2e;--dark4:#16213e;
   --card:#1e1e32;--text:#e8e8f0;--muted:#6b6b8a;
   --plus:#22c55e;--minus:#ef4444;
-  --nav-h:96px;
+  --nav-base-h:96px;
+  --nav-h:calc(var(--nav-base-h) + env(safe-area-inset-top,0px));
 }
-html{font-size:16px;-webkit-text-size-adjust:100%}
+html{
+  font-size:16px;
+  -webkit-text-size-adjust:100%;
+  /* Prevent rubber-band bounce — app feels native */
+  overscroll-behavior-y:none;
+}
 body{
   font-family:'Barlow',sans-serif;
   background:var(--dark);color:var(--text);
-  min-height:100vh;
-  /* space for fixed nav */
+  min-height:100vh;          /* fallback for old browsers */
+  min-height:100dvh;         /* dynamic viewport — hides mobile browser chrome correctly */
+  /* space for fixed nav (includes safe-area-inset-top via --nav-h) */
   padding-top:var(--nav-h);
+  /* keep content above Home Indicator on iPhone */
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  overscroll-behavior-y:none;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -41,7 +51,11 @@ body{
   border-bottom:1px solid #2a2a40;
   display:flex;flex-direction:column;
   z-index:200;
-  padding:0;
+  /* Push nav content below status bar / Dynamic Island */
+  padding-top:env(safe-area-inset-top,0px);
+  /* Respect side notches in landscape */
+  padding-left:env(safe-area-inset-left,0px);
+  padding-right:env(safe-area-inset-right,0px);
 }
 /* ── Верхняя строка: лого + утилиты ──────────────────────── */
 .nav-top{
@@ -136,7 +150,7 @@ body{
 .dropdown{
   position:fixed;
   /* top/left set by JS */
-  z-index:9999;
+  z-index:501;
   background:var(--dark3);
   border:1px solid #3a3a5e;
   border-radius:0 0 12px 12px;
@@ -162,13 +176,28 @@ body{
 .dd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* transparent overlay to close dropdown on outside click */
+/* ── Z-INDEX MAP ────────────────────────────────────────────
+   10   — sticky table headers (below nav when scrolling)
+   100  — .timer-block sticky (below nav)
+   200  — #nav fixed
+   201  — #scrollTopBtn
+   300  — .sync-topbar (above nav, cosmetic)
+   500  — #dd-backdrop
+   501  — .dropdown
+   1000 — #confirm-overlay
+   1001 — #pwd-overlay
+   1002 — #toast (topmost — always readable)
+   ──────────────────────────────────────────────────────── */
 #dd-backdrop{
-  display:none;position:fixed;inset:0;z-index:9998;
+  display:none;position:fixed;inset:0;z-index:500;
 }
 #dd-backdrop.open{display:block}
 
 /* ── SCREENS ─────────────────────────────────────────────── */
-#screens{min-height:calc(100vh - var(--nav-h))}
+#screens{
+  min-height:calc(100vh  - var(--nav-h));   /* fallback */
+  min-height:calc(100dvh - var(--nav-h));   /* dvh — correct on mobile Safari */
+}
 .screen{display:none;padding:14px 14px 32px;max-width:680px;margin:0 auto}
 .screen.active{display:block}
 
@@ -289,11 +318,11 @@ body{
 /* Sync flash on score cards */
 .sync-flash{animation:syncFlash .5s ease-out}
 @keyframes syncFlash{0%{background:rgba(62,207,142,.2)}100%{}}
-/* Top sync indicator */
+/* Top sync indicator — above nav (200), below dropdowns */
 .sync-topbar{
   display:none;position:fixed;top:0;left:0;right:0;
   height:3px;background:linear-gradient(90deg,#3ecf8e,#36b87e);
-  z-index:9999;animation:syncBar .6s ease-out forwards;
+  z-index:300;animation:syncBar .6s ease-out forwards;
 }
 @keyframes syncBar{0%{width:0;opacity:1}80%{width:100%;opacity:1}100%{opacity:0}}
 
@@ -509,10 +538,11 @@ body{
 
 /* ── COURT / ROUNDS ──────────────────────────────────────── */
 .court-title{
-  font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;margin-bottom:2px
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;margin-bottom:1px
 }
-.court-sub{font-size:12px;color:var(--muted);margin-bottom:10px}
-.round-nav{display:flex;justify-content:center;gap:6px;padding:6px 0 10px}
+.court-sub{font-size:10px;color:var(--muted);margin-bottom:6px}
+.round-nav{display:flex;justify-content:center;gap:6px;padding:6px 0 2px}
+.round-nav-inner{display:flex;justify-content:center;gap:6px;padding:8px 0 2px;border-top:1px solid #2a2a40;margin-top:8px}
 .rnd-btn{
   font-family:'Barlow Condensed',sans-serif;
   font-size:15px;font-weight:900;letter-spacing:.5px;
@@ -539,16 +569,45 @@ body{
 .rnd-btn.active .rn-lbl{opacity:1;color:var(--gold)}
 .rnd-btn.rnd-has-scores{border-color:#3a3a5e}
 .rnd-btn.rnd-has-scores.active{border-color:var(--gold)}
+.rnd-btn.rnd-confirming{
+  background:#5a2800;border-color:#ff7000;
+  color:#ffaa55;box-shadow:0 0 10px rgba(255,112,0,.3);
+}
+.rnd-btn:disabled{
+  opacity:.35;cursor:not-allowed;pointer-events:none;
+  box-shadow:none;border-color:#2a2a44;
+}
 .round-lbl{
   font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
   letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;
   margin:14px 0 6px
 }
 .match-card{
-  background:var(--card);border-radius:10px;border:1px solid #2a2a40;
-  padding:10px 12px;margin-bottom:6px;transition:border-color .15s
+  background:var(--card);border-radius:10px;
+  border:2px solid #2a2a40;
+  padding:10px 12px;margin-bottom:6px;
 }
-.match-card.has-score{border-color:#3a3a5e}
+/* Цвета пар — полная окантовка */
+.pair-0 {border-color:#4da8da!important;background:linear-gradient(135deg,rgba(77,168,218,.10),transparent)}
+.pair-1 {border-color:#6abf69!important;background:linear-gradient(135deg,rgba(106,191,105,.10),transparent)}
+.pair-2 {border-color:#f5a623!important;background:linear-gradient(135deg,rgba(245,166,35,.10),transparent)}
+.pair-3 {border-color:#c77dff!important;background:linear-gradient(135deg,rgba(199,125,255,.10),transparent)}
+.pair-4 {border-color:#ff6b6b!important;background:linear-gradient(135deg,rgba(255,107,107,.10),transparent)}
+.pair-5 {border-color:#00d4aa!important;background:linear-gradient(135deg,rgba(0,212,170,.10),transparent)}
+.pair-6 {border-color:#ffd166!important;background:linear-gradient(135deg,rgba(255,209,102,.10),transparent)}
+.pair-7 {border-color:#ef476f!important;background:linear-gradient(135deg,rgba(239,71,111,.10),transparent)}
+.pair-8 {border-color:#118ab2!important;background:linear-gradient(135deg,rgba(17,138,178,.10),transparent)}
+.pair-9 {border-color:#06d6a0!important;background:linear-gradient(135deg,rgba(6,214,160,.10),transparent)}
+.pair-10{border-color:#ff9f1c!important;background:linear-gradient(135deg,rgba(255,159,28,.10),transparent)}
+.pair-11{border-color:#a8dadc!important;background:linear-gradient(135deg,rgba(168,218,220,.10),transparent)}
+.pair-12{border-color:#e63946!important;background:linear-gradient(135deg,rgba(230,57,70,.10),transparent)}
+.pair-13{border-color:#48cae4!important;background:linear-gradient(135deg,rgba(72,202,228,.10),transparent)}
+.pair-14{border-color:#80b918!important;background:linear-gradient(135deg,rgba(128,185,24,.10),transparent)}
+.pair-15{border-color:#e07a5f!important;background:linear-gradient(135deg,rgba(224,122,95,.10),transparent)}
+.pair-16{border-color:#9b5de5!important;background:linear-gradient(135deg,rgba(155,93,229,.10),transparent)}
+.pair-17{border-color:#f2cc8f!important;background:linear-gradient(135deg,rgba(242,204,143,.10),transparent)}
+.pair-18{border-color:#81b29a!important;background:linear-gradient(135deg,rgba(129,178,154,.10),transparent)}
+.pair-19{border-color:#f72585!important;background:linear-gradient(135deg,rgba(247,37,133,.10),transparent)}
 .mrow{display:flex;align-items:center;gap:10px}
 .mrow+.mrow{margin-top:7px;padding-top:7px;border-top:1px solid #1e1e34}
 .g-icon{font-size:16px;flex-shrink:0;width:20px}
@@ -580,14 +639,22 @@ body{
 /* TOUCH TARGET: 46×46px min */
 .score-widget{display:flex;align-items:center;gap:4px}
 .score-btn{
-  width:46px;height:46px;border:none;border-radius:8px;
-  font-size:22px;font-weight:700;cursor:pointer;
+  border:none;border-radius:8px;font-weight:700;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   user-select:none;-webkit-user-select:none;touch-action:manipulation;
   transition:transform .1s;
 }
-.score-btn.minus{background:#2a1a1a;color:var(--minus)}
-.score-btn.plus {background:#1a2a1a;color:var(--plus)}
+.score-btn.minus{
+  width:52px;height:52px;font-size:26px;flex-shrink:0;
+  background:#2a1a1a;color:var(--minus);
+}
+.score-btn.plus{
+  width:110px;font-size:62px;border-radius:14px;flex-shrink:0;
+  background:#1a2a1a;color:var(--plus);
+  align-self:stretch;min-height:80px;
+}
+.match-card-inner{display:flex;gap:10px;align-items:stretch}
+.match-card-rows{flex:1;min-width:0}
 .score-btn:disabled{opacity:.3;pointer-events:none}
 .score-btn:active{transform:scale(.91)}
 .score-disp{
@@ -689,8 +756,8 @@ body{
 .td-avg{font-size:11px;color:var(--muted);text-align:right;white-space:nowrap}
 
 /* ── ФИНАЛЫ / ДИВИЗИОНЫ ──────────────────────────────────── */
-.div-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;margin-bottom:2px}
-.div-sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.div-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;margin-bottom:1px}
+.div-sub{font-size:10px;color:var(--muted);margin-bottom:6px}
 .div-roster-bar{display:flex;flex-wrap:wrap;gap:5px;padding:8px 0 12px;border-bottom:1px solid #2a2a40;margin-bottom:12px}
 .div-chip{
   display:inline-flex;align-items:center;gap:5px;
@@ -762,20 +829,24 @@ body{
 
 /* ── TOAST ───────────────────────────────────────────────── */
 #toast{
-  position:fixed;bottom:24px;left:50%;
+  position:fixed;
+  bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  left:50%;
   transform:translateX(-50%) translateY(70px);
   background:var(--card);color:var(--text);
   border:1px solid #3a3a5e;border-radius:10px;
   padding:10px 20px;
   font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;
-  z-index:10000;transition:transform .3s ease;
+  z-index:1002;transition:transform .3s ease;   /* topmost — above modals */
   pointer-events:none;white-space:nowrap
 }
 #toast.show{transform:translateX(-50%) translateY(0)}
 
 /* ── SCROLL TO TOP ───────────────────────────────────────── */
 #scrollTopBtn{
-  position:fixed;bottom:20px;right:16px;
+  position:fixed;
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  right:calc(16px + env(safe-area-inset-right,0px));
   width:40px;height:40px;border-radius:50%;
   background:var(--dark3);border:1px solid #3a3a5e;
   color:var(--muted);font-size:16px;cursor:pointer;
@@ -785,11 +856,42 @@ body{
 
 /* ── CUSTOM CONFIRM MODAL ──────────────────────────────────── */
 #confirm-overlay{
-  display:none;position:fixed;inset:0;z-index:10000;
+  display:none;position:fixed;inset:0;z-index:1000;
   background:rgba(0,0,0,.72);align-items:center;justify-content:center;
   animation:ddFade .15s ease;
 }
 #confirm-overlay.open{display:flex;}
+#pwd-overlay{
+  display:none;position:fixed;inset:0;z-index:1001;
+  background:rgba(0,0,0,.85);align-items:center;justify-content:center;
+  animation:ddFade .15s ease;
+}
+#pwd-overlay.open{display:flex;}
+#pwd-box{
+  background:var(--dark3);border:1px solid #3a3a5e;border-radius:16px;
+  padding:28px 24px 20px;max-width:300px;width:90%;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.8);
+}
+#pwd-box .pwd-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;}
+#pwd-box .pwd-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+#pwd-input{
+  width:100%;box-sizing:border-box;
+  background:#1a1a2e;border:1px solid #3a3a5e;border-radius:10px;
+  color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:22px;
+  font-weight:700;letter-spacing:6px;text-align:center;
+  padding:12px;margin-bottom:8px;outline:none;
+}
+#pwd-input:focus{border-color:var(--accent);}
+#pwd-error{color:var(--red);font-size:13px;min-height:18px;margin-bottom:12px;}
+#pwd-ok{
+  width:100%;padding:12px;background:var(--accent);border:none;border-radius:10px;
+  color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;
+  cursor:pointer;
+}
+#pwd-cancel{
+  margin-top:8px;background:none;border:none;color:var(--muted);
+  font-size:13px;cursor:pointer;padding:4px;
+}
 #confirm-box{
   background:var(--dark3);border:1px solid #3a3a5e;border-radius:16px;
   padding:28px 24px 20px;max-width:320px;width:90%;text-align:center;
@@ -827,8 +929,11 @@ body{
   border-radius:14px;
   padding:14px 16px 12px;
   margin-bottom:16px;
-  position:relative;
+  position:sticky;
+  top:var(--nav-h);
+  z-index:100;
   overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.5);
 }
 .timer-block::before{
   content:'';position:absolute;inset:0;
@@ -837,7 +942,7 @@ body{
 }
 .timer-display{
   font-family:'Bebas Neue',sans-serif;
-  font-size:72px;
+  font-size:64px;
   line-height:1;
   letter-spacing:4px;
   color:var(--gold);
@@ -881,8 +986,23 @@ body{
   border-color:var(--gold);
   color:var(--gold);
 }
+.timer-custom{display:none}
+.timer-custom-btn{
+  width:34px;height:34px;border-radius:8px;border:1px solid #3a3a5e;
+  background:var(--card);color:var(--text);font-size:20px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;touch-action:manipulation;
+}
+.timer-custom-btn:hover{border-color:#5a5a8e;}
+.timer-custom-val{
+  font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;
+  color:var(--muted);min-width:60px;text-align:center;
+  border:1px solid #3a3a5e;border-radius:8px;padding:4px 8px;
+  background:var(--card);cursor:default;
+}
+.timer-custom-val.active{color:var(--gold);border-color:var(--gold);}
 .timer-controls{
-  display:flex;gap:8px;
+  display:flex;gap:8px;align-items:center;
   margin-top:8px;
 }
 .timer-btn{
@@ -911,6 +1031,7 @@ body{
   flex:0 0 80px;
 }
 .timer-btn-reset:hover{color:var(--text);border-color:#5a5a8e}
+.timer-btn-reset.confirm{background:#5a2800;border-color:#ff7000;color:#ffaa55;font-weight:700;}
 .timer-progress{
   height:3px;
   background:#2a2a40;
@@ -1576,12 +1697,13 @@ function safeRender() {
 // ════════════════════════════════════════════════════════════
 // 7. TAB SWITCHING
 // ════════════════════════════════════════════════════════════
-function switchTab(id) {
+async function switchTab(id) {
   closeDropdown();
   // Если запрошен неактивный дивизион — перенаправляем на первый активный
   if (typeof id === 'string' && DIV_KEYS.includes(id) && !activeDivKeys().includes(id)) {
     id = activeDivKeys()[0] || 0;
   }
+  const prevTabId = activeTabId;
   activeTabId = id;
 
   // Hide all, show target
@@ -1591,7 +1713,15 @@ function switchTab(id) {
 
   // Re-render content on demand
   if (id === 'svod')   screen.innerHTML = renderSvod();
-  if (id === 'roster') screen.innerHTML = renderRoster();
+  if (id === 'roster') {
+    if (!rosterUnlocked) {
+      screen.classList.add('active');
+      syncNavActive();
+      const ok = await showPasswordPrompt();
+      if (!ok) { activeTabId = prevTabId; switchTab(prevTabId || 'svod'); return; }
+    }
+    screen.innerHTML = renderRoster();
+  }
   if (id === 'stats')  screen.innerHTML = renderStats();
   if (id === 'hard' || id === 'advance' || id === 'medium' || id === 'lite') {
     updateDivisions();
@@ -1770,7 +1900,11 @@ function renderRoster() {
   </div>
   <button class="btn-finish" onclick="finishTournament()">
     🏁 ЗАВЕРШИТЬ ТУРНИР
-  </button>`;
+  </button>
+  <div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(233,69,96,.2);border-radius:12px">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:10px;text-align:center">⚠️ Сброс очищает все результаты. Ростер сохраняется.</div>
+    <button class="btn-reset-tournament" onclick="resetTournament()">🗑 Сбросить турнир</button>
+  </div>`;
   return html;
 }
 
@@ -1778,6 +1912,13 @@ function renderRoster() {
 // 11. RENDER: COURT
 // ════════════════════════════════════════════════════════════
 // ── Мини-бейдж позиции игрока (для корта) ───────────────────
+function manColorIdx(name) {
+  if (!name) return 0;
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return h % 5;
+}
+
 function playerRankBadge(name, gender) {
   const ranked = getAllRanked();
   const arr = ranked[gender];
@@ -1791,20 +1932,38 @@ function playerRankBadge(name, gender) {
   return `<div class="p-rank-badge"><span class="pb ${pbCls(p.globalRank)}">${p.globalRank}${p.globalTied?'=':''}</span><span class="p-rank-badge-div ${divCls}">${DIV_LABELS[divKey]}</span><span>${p.pts}оч</span></div>`;
 }
 
+/* ── Round nav helpers: generate buttons with lock logic ──── */
+function renderCourtNavInner(ci) {
+  return Array.from({length:ppc}, (_, ri) => {
+    const hasScores    = Array.from({length:ppc}, (_, mi) => scores[ci]?.[mi]?.[ri]).some(s => s !== null && s > 0);
+    const isCur        = ri === (courtRound[ci] || 0);
+    // Round N locked until round N-1 has at least one score
+    const prevUnlocked = ri === 0 || Array.from({length:ppc}, (_, mi) => scores[ci]?.[mi]?.[ri-1]).some(s => s !== null && s > 0);
+    return `<button class="rnd-btn${isCur?' active':''}${hasScores?' rnd-has-scores':''}"${prevUnlocked?'':' disabled'} id="rnd-${ci}-${ri}" onclick="setCourtRoundGuard(${ci},${ri})">
+      <span class="rn-num">${ri+1}</span><span class="rn-lbl">РАУНД</span>
+    </button>`;
+  }).join('');
+}
+
+function renderDivNavInner(key) {
+  const Nd = divRoster[key].men.length;
+  return Array.from({length:Nd}, (_, ri) => {
+    const hasScores    = Array.from({length:Nd}, (_, mi) => (divScores[key][mi]??[])[ri]).some(s => s !== null && s > 0);
+    const isCur        = ri === (divRoundState[key] || 0);
+    const prevUnlocked = ri === 0 || Array.from({length:Nd}, (_, mi) => (divScores[key][mi]??[])[ri-1]).some(s => s !== null && s > 0);
+    return `<button class="rnd-btn${isCur?' active':''}${hasScores?' rnd-has-scores':''}"${prevUnlocked?'':' disabled'} id="rnd-${key}-${ri}" onclick="setDivRoundGuard('${key}',${ri})">
+      <span class="rn-num">${ri+1}</span><span class="rn-lbl">РАУНД</span>
+    </button>`;
+  }).join('');
+}
+
 function renderCourt(ci) {
   const ct   = ALL_COURTS[ci];
   const meta = COURT_META[ci];
-  let html = renderTimerBlock(ci) + `<div class="court-title" style="color:${meta.color}">${meta.name}</div>
-  <div class="court-sub">Раундов: ${ppc} · нажимайте + и −</div>
-  <div class="round-nav" id="rnd-nav-${ci}">
-    ${Array.from({length:ppc},(_,ri)=>{
-      const hasScores = Array.from({length:ppc},(_,mi)=>scores[ci]?.[mi]?.[ri]).some(s=>s!==null&&s>0);
-      const isCur = ri === (courtRound[ci]||0);
-      return `<button class="rnd-btn${isCur?' active':''}${hasScores?' rnd-has-scores':''}" onclick="setCourtRound(${ci},${ri})">
-        <span class="rn-num">${ri+1}</span><span class="rn-lbl">РАУНД</span>
-      </button>`;
-    }).join('')}
-  </div>`;
+  const roundNavHtml = renderCourtNavInner(ci);
+
+  let html = renderTimerBlock(ci, roundNavHtml) + `<div class="court-title" style="color:${meta.color}">${meta.name}</div>
+  <div class="court-sub">нажимайте + и −</div>`;
 
   const curRi = courtRound[ci] || 0;
   for (let ri = 0; ri < ppc; ri++) {
@@ -1817,29 +1976,33 @@ function renderCourt(ci) {
       const scVal = isNull ? 0 : sc;
       const mx  = scVal>=15, zr = !isNull && scVal===0;
       html += `
-      <div class="match-card${(!isNull && scVal>0)?' has-score':''}" id="card-${ci}-${mi}-${ri}">
-        <div class="mrow">
-          <span class="g-icon">🏋️</span>
-          <div class="p-info">
-            <div class="p-name">${esc(ct.men[mi]||'—')}</div>
-            ${ct.men[mi] ? playerRankBadge(ct.men[mi], 'M') : ''}
-            <div class="p-partner">+ ${esc(ct.women[wi]||'—')}</div>
+      <div class="match-card pair-${ci*ppc+mi}${(!isNull && scVal>0)?' has-score':''}" id="card-${ci}-${mi}-${ri}">
+        <div class="match-card-inner">
+          <div class="match-card-rows">
+            <div class="mrow">
+              <span class="g-icon">🏋️</span>
+              <div class="p-info">
+                <div class="p-name">${esc(ct.men[mi]||'—')}</div>
+                ${ct.men[mi] ? playerRankBadge(ct.men[mi], 'M') : ''}
+                <div class="p-partner">+ ${esc(ct.women[wi]||'—')}</div>
+              </div>
+              <div class="score-widget">
+                <button class="score-btn minus" data-ci="${ci}" data-mi="${mi}" data-ri="${ri}" data-dir="-1"${(isNull||scVal<=0)?' disabled':''}>−</button>
+                <div class="score-disp${mx?' mx':zr?' zr':isNull?' zr':''}" id="sd-${ci}-${mi}-${ri}">${isNull?'–':scVal}<span class="score-max-lbl">${mx?'МАХ':isNull?'':'/15'}</span></div>
+              </div>
+            </div>
+            <div class="mrow auto-row">
+              <span class="g-icon">👩</span>
+              <div class="p-info">
+                <div class="p-name">${esc(ct.women[wi]||'—')}</div>
+                ${ct.women[wi] ? playerRankBadge(ct.women[wi], 'W') : ''}
+                <div class="p-partner">+ ${esc(ct.men[mi]||'—')}</div>
+              </div>
+              <span class="auto-badge">AUTO</span>
+              <div class="auto-score" id="as-${ci}-${wi}-${ri}">${isNull?'–':scVal}</div>
+            </div>
           </div>
-          <div class="score-widget">
-            <button class="score-btn minus" data-ci="${ci}" data-mi="${mi}" data-ri="${ri}" data-dir="-1"${(isNull||scVal<=0)?' disabled':''}>−</button>
-            <div class="score-disp${mx?' mx':zr?' zr':isNull?' zr':''}" id="sd-${ci}-${mi}-${ri}">${isNull?'–':scVal}<span class="score-max-lbl">${mx?'МАХ':isNull?'':'/15'}</span></div>
-            <button class="score-btn plus"  data-ci="${ci}" data-mi="${mi}" data-ri="${ri}" data-dir="1"${scVal>=15?' disabled':''}>+</button>
-          </div>
-        </div>
-        <div class="mrow auto-row">
-          <span class="g-icon">👩</span>
-          <div class="p-info">
-            <div class="p-name">${esc(ct.women[wi]||'—')}</div>
-            ${ct.women[wi] ? playerRankBadge(ct.women[wi], 'W') : ''}
-            <div class="p-partner">+ ${esc(ct.men[mi]||'—')}</div>
-          </div>
-          <span class="auto-badge">AUTO</span>
-          <div class="auto-score" id="as-${ci}-${wi}-${ri}">${isNull?'–':scVal}</div>
+          <button class="score-btn plus" data-ci="${ci}" data-mi="${mi}" data-ri="${ri}" data-dir="1"${scVal>=15?' disabled':''}>+</button>
         </div>
       </div>`;
     }
@@ -1856,6 +2019,55 @@ function setDivRound(key, ri) {
     const svod = getSvod();
     screen.innerHTML = renderDivCourt(key, svod[key].M, svod[key].W);
   }
+}
+
+/* ── Round-switch guard (double-tap to confirm) ──────────── */
+let   _rndGuardPending = null;   // { btnId, fn }
+const _rndGuardTimer   = {};
+
+function _rndGuard(btnId, fn) {
+  const btn = document.getElementById(btnId);
+  if (!btn) { fn(); return; }
+  if (btn.classList.contains('active')) return; // уже этот раунд — ничего делать
+
+  // Если нажали другую кнопку — отменяем предыдущее ожидание
+  if (_rndGuardPending && _rndGuardPending.btnId !== btnId) {
+    clearTimeout(_rndGuardTimer[_rndGuardPending.btnId]);
+    const prev = document.getElementById(_rndGuardPending.btnId);
+    if (prev) {
+      prev.classList.remove('rnd-confirming');
+      prev.querySelector('.rn-num').textContent = prev.dataset.origNum;
+    }
+    _rndGuardPending = null;
+  }
+
+  if (_rndGuardPending && _rndGuardPending.btnId === btnId) {
+    // Второе нажатие — подтверждаем переключение
+    clearTimeout(_rndGuardTimer[btnId]);
+    btn.classList.remove('rnd-confirming');
+    btn.querySelector('.rn-num').textContent = btn.dataset.origNum;
+    _rndGuardPending = null;
+    fn();
+  } else {
+    // Первое нажатие — показываем запрос подтверждения
+    const numEl = btn.querySelector('.rn-num');
+    btn.dataset.origNum = numEl.textContent;
+    numEl.textContent = '✓';
+    btn.classList.add('rnd-confirming');
+    _rndGuardPending = { btnId, fn };
+    _rndGuardTimer[btnId] = setTimeout(() => {
+      btn.classList.remove('rnd-confirming');
+      numEl.textContent = btn.dataset.origNum;
+      _rndGuardPending = null;
+    }, 2000);
+  }
+}
+
+function setCourtRoundGuard(ci, ri) {
+  _rndGuard(`rnd-${ci}-${ri}`, () => setCourtRound(ci, ri));
+}
+function setDivRoundGuard(key, ri) {
+  _rndGuard(`rnd-${key}-${ri}`, () => setDivRound(key, ri));
 }
 
 function setCourtRound(ci, ri) {
@@ -1940,7 +2152,7 @@ function renderSvod() {
       const avg = p.rPlayed>0 ? (p.pts/p.rPlayed).toFixed(1) : '—';
       t += `<tr>
         <td class="td-rank"><span class="pb ${pbCls(p.globalRank)}">${p.globalRank}${p.globalTied?'<sup>=</sup>':''}</span></td>
-        <td><div class="td-name">${p.genderIcon} ${esc(p.name)}</div></td>
+        <td><div class="td-name">${esc(p.name)}</div></td>
         <td class="td-court" style="color:${p.courtColor}">${p.courtName}</td>
         <td class="td-pts">${p.pts}</td>
         <td class="td-avg">${avg}</td>
@@ -2055,6 +2267,10 @@ function updateDivisions() {
 // 14. RENDER: DIVISION COURT
 // ════════════════════════════════════════════════════════════
 function renderDivCourt(key, svodM, svodW) {
+  // Карта имя → originalCourtIndex для стабильного цвета
+  const origIdxMap = {};
+  [...(svodM||[]), ...(svodW||[])].forEach(p => { if (p && p.name) origIdxMap[p.name] = p.originalCourtIndex ?? 0; });
+
   const info = {
     hard:    { color:'#e94560', label:`🔥 HARD`,    sub:`Топ-${ppc} по результатам Сводки` },
     advance: { color:'#f5a623', label:`⚡ ADVANCE`, sub:`Места ${ppc+1}–${ppc*2} по результатам Сводки` },
@@ -2076,8 +2292,11 @@ function renderDivCourt(key, svodM, svodW) {
       <div class="div-empty">Недостаточно участников — введите очки на кортах Этапа 1</div>`;
   }
 
+  // Round nav для дивизиона (с логикой блокировки)
+  const divRoundNavHtml = renderDivNavInner(key);
+
   // Roster chips
-  let html = renderTimerBlock(dci) +
+  let html = renderTimerBlock(dci, divRoundNavHtml) +
     `<div class="div-title" style="color:${info.color}">${info.label}</div>
   <div class="div-sub">${info.sub}</div>
   <div class="div-roster-bar">`;
@@ -2089,16 +2308,7 @@ function renderDivCourt(key, svodM, svodW) {
   });
   html+=`</div>`;
 
-  // Round nav buttons
-  html += `<div class="round-nav" id="rnd-nav-${key}">
-    ${Array.from({length:Nd},(_,ri)=>{
-      const hasScores = Array.from({length:Nd},(_,mi)=>(divScores[key][mi]??[])[ri]).some(s=>s!==null&&s>0);
-      const isCur = ri === (divRoundState[key]||0);
-      return `<button class="rnd-btn${isCur?' active':''}${hasScores?' rnd-has-scores':''}" onclick="setDivRound('${key}',${ri})">
-        <span class="rn-num">${ri+1}</span><span class="rn-lbl">РАУНД</span>
-      </button>`;
-    }).join('')}
-  </div>`;
+  // Round nav будет внутри таймер-блока (см. renderTimerBlock)
 
   // Show only current round
   const curDivRi = divRoundState[key] || 0;
@@ -2112,24 +2322,28 @@ function renderDivCourt(key, svodM, svodW) {
       const scVal = isNull ? 0 : sc;
       const mx  = scVal>=15, zr = !isNull && scVal===0;
       html+=`
-      <div class="match-card${(!isNull && scVal>0)?' has-score':''}" id="dcard-${key}-${mi}-${ri}">
-        <div class="mrow">
-          <span class="g-icon">🏋️</span>
-          <div class="p-info">
-            <div class="p-name">${esc(men[mi]||'—')}</div>
-            <div class="p-partner">+ ${esc(women[wi]||'—')}</div>
+      <div class="match-card pair-${origIdxMap[men[mi]]??mi}${(!isNull && scVal>0)?' has-score':''}" id="dcard-${key}-${mi}-${ri}">
+        <div class="match-card-inner">
+          <div class="match-card-rows">
+            <div class="mrow">
+              <span class="g-icon">🏋️</span>
+              <div class="p-info">
+                <div class="p-name">${esc(men[mi]||'—')}</div>
+                <div class="p-partner">+ ${esc(women[wi]||'—')}</div>
+              </div>
+              <div class="score-widget">
+                <button class="score-btn minus" data-div="${key}" data-mi="${mi}" data-ri="${ri}" data-dir="-1"${(isNull||scVal<=0)?' disabled':''}>−</button>
+                <div class="score-disp${mx?' mx':zr?' zr':isNull?' zr':''}" id="dsd-${key}-${mi}-${ri}">${isNull?'–':scVal}<span class="score-max-lbl">${mx?'МАХ':isNull?'':'/15'}</span></div>
+              </div>
+            </div>
+            <div class="mrow auto-row">
+              <span class="g-icon">👩</span>
+              <div class="p-info"><div class="p-name">${esc(women[wi]||'—')}</div></div>
+              <span class="auto-badge">AUTO</span>
+              <div class="auto-score" id="das-${key}-${wi}-${ri}">${isNull?'–':scVal}</div>
+            </div>
           </div>
-          <div class="score-widget">
-            <button class="score-btn minus" data-div="${key}" data-mi="${mi}" data-ri="${ri}" data-dir="-1"${(isNull||scVal<=0)?' disabled':''}>−</button>
-            <div class="score-disp${mx?' mx':zr?' zr':isNull?' zr':''}" id="dsd-${key}-${mi}-${ri}">${isNull?'–':scVal}<span class="score-max-lbl">${mx?'МАХ':isNull?'':'/15'}</span></div>
-            <button class="score-btn plus"  data-div="${key}" data-mi="${mi}" data-ri="${ri}" data-dir="1"${scVal>=15?' disabled':''}>+</button>
-          </div>
-        </div>
-        <div class="mrow auto-row">
-          <span class="g-icon">👩</span>
-          <div class="p-info"><div class="p-name">${esc(women[wi]||'—')}</div></div>
-          <span class="auto-badge">AUTO</span>
-          <div class="auto-score" id="das-${key}-${wi}-${ri}">${isNull?'–':scVal}</div>
+          <button class="score-btn plus" data-div="${key}" data-mi="${mi}" data-ri="${ri}" data-dir="1"${scVal>=15?' disabled':''}>+</button>
         </div>
       </div>`;
     }
@@ -2251,24 +2465,6 @@ function renderStats() {
       }).join('')}
     </div>
 
-    <div class="stat-card" style="border-color:#1a3a1a">
-      <div class="stat-card-title">📊 ЭКСПОРТ В GOOGLE SHEETS</div>
-      <div style="color:var(--muted);font-size:13px;margin-bottom:10px">Вставьте URL вашего Google Apps Script (Web App) для экспорта итоговой таблицы.</div>
-      <input class="sheets-url-input" id="sheets-url-input"
-        type="url" placeholder="https://script.google.com/macros/s/.../exec"
-        value="${localStorage.getItem('kotc3_sheets_url')||''}"
-        oninput="localStorage.setItem('kotc3_sheets_url',this.value)">
-      <button class="btn-sheets" onclick="exportToSheets(this)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
-        Экспортировать итоги
-      </button>
-    </div>
-
-    <div class="stat-card" style="border-color:#3a1a1a">
-      <div class="stat-card-title">⚠️ УПРАВЛЕНИЕ ТУРНИРОМ</div>
-      <div style="color:var(--muted);font-size:13px;margin-bottom:12px">Сброс очищает все результаты. Ростер сохраняется.</div>
-      <button class="btn-reset-tournament" onclick="resetTournament()">🗑 Сбросить турнир</button>
-    </div>
   </div>
 
   ${renderHistory()}`;
@@ -3145,6 +3341,48 @@ function attachListeners() {
   sc.addEventListener('click', scoreClickHandler);
 }
 
+function playScoreSound(dir) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = dir > 0 ? 880 : 440;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.18);
+    osc.onended = () => ctx.close();
+  } catch(e) {}
+}
+
+function playComboSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523, 659, 784, 1047]; // до-ми-соль-до (мажорный аккорд вверх)
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.09;
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      osc.start(t);
+      osc.stop(t + 0.22);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch(e) {}
+}
+
+// Combo tracker: last pressed player key → timestamp + count
+const _comboTracker = {};
+const COMBO_WINDOW = 1500; // ms
+
 function scoreClickHandler(e) {
   const btn = e.target.closest('.score-btn');
   if (!btn) return;
@@ -3152,6 +3390,24 @@ function scoreClickHandler(e) {
   btn.dataset.busy = '1';
   setTimeout(() => delete btn.dataset.busy, 200);
   const dir    = +btn.dataset.dir;
+
+  // Combo detection (только для +)
+  if (dir > 0) {
+    const key = `${btn.dataset.div||btn.dataset.ci}_${btn.dataset.mi}_${btn.dataset.ri}`;
+    const now = Date.now();
+    const tr  = _comboTracker[key];
+    if (tr && now - tr.t < COMBO_WINDOW) {
+      tr.count++;
+      tr.t = now;
+      if (tr.count >= 2) { playComboSound(); }
+      else               { playScoreSound(dir); }
+    } else {
+      _comboTracker[key] = { t: now, count: 1 };
+      playScoreSound(dir);
+    }
+  } else {
+    playScoreSound(dir);
+  }
   const mi     = +btn.dataset.mi;
   const ri     = +btn.dataset.ri;
   const divKey = btn.dataset.div;
@@ -3207,6 +3463,9 @@ function updateCourtWidget(ci, mi, ri, val) {
   // Totals
   const tot = document.getElementById(`totals-${ci}`);
   if (tot) tot.outerHTML = renderTotals(ci);
+  // Instantly unlock next round button if this was the first score
+  const courtNav = document.getElementById(`rnd-nav-${ci}`);
+  if (courtNav) courtNav.innerHTML = renderCourtNavInner(ci);
 }
 
 function updateDivWidget(key, mi, ri, val) {
@@ -3245,6 +3504,10 @@ function updateDivWidget(key, mi, ri, val) {
     })();
     dt.outerHTML = newHtml;
   }
+  // Instantly unlock next round button if this was the first score
+  const dci    = DIV_TIMER_IDX[key];
+  const divNav = document.getElementById(`rnd-nav-${dci}`);
+  if (divNav) divNav.innerHTML = renderDivNavInner(key);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3332,6 +3595,41 @@ function getAudioCtx() {
   if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return _audioCtx;
 }
+function playWarning60() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // два коротких свистка — предупреждение
+    [[0, 660], [0.28, 660]].forEach(([delay, freq]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, t + delay);
+      gain.gain.linearRampToValueAtTime(0.4, t + delay + 0.02);
+      gain.gain.setValueAtTime(0.4, t + delay + 0.16);
+      gain.gain.linearRampToValueAtTime(0, t + delay + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.25);
+    });
+  } catch(e) {}
+}
+
+function speakFinal() {
+  try {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance('FINAL');
+    u.lang   = 'en-US';
+    u.rate   = 0.85;
+    u.pitch  = 1.1;
+    u.volume = 1;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch(e) {}
+}
+
 function playEndSignal() {
   try {
     const ctx = getAudioCtx();
@@ -3381,7 +3679,20 @@ function timerTick() {
     const elapsed = (now - ts.startedAt) / 1000;
     const rem = Math.max(0, ts.startRemaining - elapsed);
     const wasPositive = ts.remaining > 0;
+    const prev = ts.remaining;
     ts.remaining = rem;
+
+    // 1 минута — предупреждение (только один раз за сессию)
+    if (prev > 60 && rem <= 60 && !ts._w60) {
+      ts._w60 = true;
+      playWarning60();
+    }
+    // 20 секунд — голос "FINAL" (только один раз за сессию)
+    if (prev > 20 && rem <= 20 && !ts._w20) {
+      ts._w20 = true;
+      speakFinal();
+    }
+
     if (rem <= 0 && wasPositive) {
       ts.running = false;
       ts.remaining = 0;
@@ -3521,6 +3832,8 @@ function timerReset(ci) {
     ts.remaining      = ts.total;
     ts.startedAt      = null;
     ts.startRemaining = ts.total;
+    ts._w60 = false;
+    ts._w20 = false;
     timerTs[i] = now;
     updateTimerUI(i);
     document.querySelectorAll(`[data-timer-ci="${i}"]`).forEach(b => {
@@ -3529,6 +3842,29 @@ function timerReset(ci) {
   }
   saveTimerState();
   sbPush();
+}
+
+const _timerResetGuardTimers = {};
+function timerResetGuard(ci) {
+  const btn = document.getElementById(`tmr-reset-${ci}`);
+  if (!btn) { timerReset(ci); return; }
+  if (btn.dataset.confirming === '1') {
+    clearTimeout(_timerResetGuardTimers[ci]);
+    delete _timerResetGuardTimers[ci];
+    btn.dataset.confirming = '';
+    btn.textContent = 'СБРОС';
+    btn.classList.remove('confirm');
+    timerReset(ci);
+  } else {
+    btn.dataset.confirming = '1';
+    btn.textContent = '✓ ОК?';
+    btn.classList.add('confirm');
+    _timerResetGuardTimers[ci] = setTimeout(() => {
+      btn.dataset.confirming = '';
+      btn.textContent = 'СБРОС';
+      btn.classList.remove('confirm');
+    }, 2000);
+  }
 }
 
 function timerSetPreset(ci, minutes) {
@@ -3551,8 +3887,24 @@ function timerSetPreset(ci, minutes) {
   sbPush();
 }
 
+function timerCustomStep(ci, step) {
+  const ts = timerState[ci];
+  const cur = ts.preset;
+  const next = Math.min(20, Math.max(9, cur + step));
+  if (next === cur) return;
+  timerSetPreset(ci, next);
+  // обновляем отображение кастомного поля для всей группы
+  for (const i of _timerGroup(ci)) {
+    const val = document.getElementById(`tmr-custom-${i}`);
+    if (val) {
+      val.textContent = `${next} мин`;
+      val.classList.toggle('active', !TIMER_PRESETS.includes(next));
+    }
+  }
+}
+
 // ── Render helper (called inside renderCourt) ────────────────
-function renderTimerBlock(ci) {
+function renderTimerBlock(ci, roundNavHtml='') {
   const ts = timerState[ci];
   const rem = ts.remaining;
   const mins = Math.floor(rem / 60);
@@ -3567,20 +3919,23 @@ function renderTimerBlock(ci) {
                           : ts.running ? 'timer-btn timer-btn-start paused'
                           : 'timer-btn timer-btn-start';
 
-  return `<div class="timer-block">
-    <div class="timer-display${danger?' danger':done?' done':''}" id="tmr-disp-${ci}">${display}</div>
-    <div class="timer-presets">
-      ${TIMER_PRESETS.map(m=>`<button class="timer-preset${ts.preset===m?' active':''}"
-        data-timer-ci="${ci}" data-timer-min="${m}"
-        onclick="timerSetPreset(${ci},${m})">${m} мин</button>`).join('')}
+  return `<div class="timer-block" id="timer-block-${ci}">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="timer-display${danger?' danger':done?' done':''}" id="tmr-disp-${ci}" style="flex-shrink:0">${display}</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div class="timer-controls" style="margin-top:0">
+          <button class="timer-custom-btn" onclick="timerCustomStep(${ci},-1)">−</button>
+          <div class="timer-custom-val active" id="tmr-custom-${ci}">${ts.preset} мин</div>
+          <button class="timer-custom-btn" onclick="timerCustomStep(${ci},1)">+</button>
+          <button class="${startCls}" id="tmr-btn-${ci}" onclick="timerStartPause(${ci})" style="flex:1">${startLabel}</button>
+          <button class="timer-btn timer-btn-reset" id="tmr-reset-${ci}" onclick="timerResetGuard(${ci})">СБРОС</button>
+        </div>
+        <div class="timer-progress" style="margin-top:0">
+          <div class="timer-progress-fill${danger?' danger':''}" id="tmr-bar-${ci}" style="width:${pct}%"></div>
+        </div>
+      </div>
     </div>
-    <div class="timer-controls">
-      <button class="${startCls}" id="tmr-btn-${ci}" onclick="timerStartPause(${ci})">${startLabel}</button>
-      <button class="timer-btn timer-btn-reset" onclick="timerReset(${ci})">СБРОС</button>
-    </div>
-    <div class="timer-progress">
-      <div class="timer-progress-fill${danger?' danger':''}" id="tmr-bar-${ci}" style="width:${pct}%"></div>
-    </div>
+    ${roundNavHtml ? `<div class="round-nav-inner" id="rnd-nav-${ci}">${roundNavHtml}</div>` : ''}
   </div>`;
 }
 // ════════════════════════════════════════════════════════════
@@ -3601,6 +3956,16 @@ timerTick(); // start global animation loop
 </script>
 
 <!-- Custom confirm modal -->
+<div id="pwd-overlay">
+  <div id="pwd-box">
+    <div class="pwd-title">🔒 РОСТЕР</div>
+    <div class="pwd-sub">Введите пароль для доступа</div>
+    <input id="pwd-input" type="password" inputmode="numeric" maxlength="10" placeholder="····">
+    <div id="pwd-error"></div>
+    <button id="pwd-ok">Войти</button>
+    <br><button id="pwd-cancel">Отмена</button>
+  </div>
+</div>
 <div id="confirm-overlay">
   <div id="confirm-box">
     <div id="confirm-msg"></div>
@@ -3611,6 +3976,43 @@ timerTick(); // start global animation loop
   </div>
 </div>
 <script>
+const ROSTER_PWD = '2525';
+let rosterUnlocked = sessionStorage.getItem('rosterUnlocked') === '1';
+
+function showPasswordPrompt() {
+  return new Promise(resolve => {
+    const ov = document.getElementById('pwd-overlay');
+    const inp = document.getElementById('pwd-input');
+    const err = document.getElementById('pwd-error');
+    inp.value = '';
+    err.textContent = '';
+    ov.classList.add('open');
+    setTimeout(() => inp.focus(), 100);
+
+    function cleanup(result) {
+      ov.classList.remove('open');
+      document.getElementById('pwd-ok').onclick = null;
+      document.getElementById('pwd-cancel').onclick = null;
+      inp.onkeydown = null;
+      resolve(result);
+    }
+    function tryUnlock() {
+      if (inp.value === ROSTER_PWD) {
+        rosterUnlocked = true;
+        sessionStorage.setItem('rosterUnlocked', '1');
+        cleanup(true);
+      } else {
+        err.textContent = '❌ Неверный пароль';
+        inp.value = '';
+        inp.focus();
+      }
+    }
+    document.getElementById('pwd-ok').onclick = tryUnlock;
+    document.getElementById('pwd-cancel').onclick = () => cleanup(false);
+    inp.onkeydown = e => { if (e.key === 'Enter') tryUnlock(); };
+  });
+}
+
 function showConfirm(msg) {
   return new Promise(resolve => {
     const ov = document.getElementById('confirm-overlay');
