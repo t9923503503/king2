@@ -2241,16 +2241,7 @@ function renderSvod() {
         <th class="td-pts">Оч·1</th>
         <th class="td-avg">avg/р</th>
       </tr></thead><tbody>`;
-    const allPlayers = [...mpl,...wpl];
-    // Динамические разделители по activeDivKeys
-    const sepLabels = {};
-    const ALL_SEP = { advance:{cls:'sep-advance',label:'⚡ ADVANCE'}, medium:{cls:'sep-medium',label:'⚙️ MEDIUM'}, lite:{cls:'sep-lite',label:'🍀 LITE'} };
-    activeDivKeys().forEach((key, i) => {
-      if (i === 0) return; // первый дивизион — разделитель перед ним не нужен
-      const boundary = i * ppc; // после этого глобального ранга
-      if (ALL_SEP[key]) sepLabels[boundary] = ALL_SEP[key];
-    });
-    allPlayers.forEach(p => {
+    [...mpl,...wpl].forEach(p => {
       const avg = p.rPlayed>0 ? (p.pts/p.rPlayed).toFixed(1) : '—';
       t += `<tr>
         <td class="td-rank"><span class="pb ${pbCls(p.globalRank)}">${p.globalRank}${p.globalTied?'<sup>=</sup>':''}</span></td>
@@ -2259,11 +2250,6 @@ function renderSvod() {
         <td class="td-pts">${p.pts}</td>
         <td class="td-avg">${avg}</td>
       </tr>`;
-      // Разделитель после границы дивизиона (только если нет ничьей)
-      if (sepLabels[p.globalRank] && !p.globalTied) {
-        const sep = sepLabels[p.globalRank];
-        t += `<tr class="svod-div-sep ${sep.cls}"><td colspan="5"><div class="svod-div-sep-inner"><div class="svod-div-sep-line"></div><span>${sep.label}</span><div class="svod-div-sep-line"></div></div></td></tr>`;
-      }
     });
     return t + `</tbody></table></div>`;
   }
