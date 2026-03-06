@@ -966,6 +966,7 @@ const DIV_TIMER_IDX = { hard:4, advance:5, medium:6, lite:7 };
 
 // ── Tournament meta ─────────────────────────────────────────
 let tournamentMeta = { name: '', date: '' };
+let tournamentStartTime = null; // ISO string, set on first score entry
 
 // pending values while user fiddles with seg buttons (not yet applied)
 let _ppc = ppc;
@@ -1287,6 +1288,25 @@ async function finishTournament() {
     return s;
   })();
 
+  // Build rounds breakdown: roundsData[ci] = { courtName, rounds: [{ri, pairs:[{mName,wName,score}]}] }
+  const roundsData = [];
+  for (let ci = 0; ci < nc; ci++) {
+    const courtRoundList = [];
+    for (let ri = 0; ri < ppc; ri++) {
+      const pairs = [];
+      for (let mi = 0; mi < ppc; mi++) {
+        const score = scores[ci]?.[mi]?.[ri] ?? null;
+        if (score !== null) {
+          const wi = (mi + ri) % ppc;
+          pairs.push({ mName: ALL_COURTS[ci].men[mi] || `М${mi+1}`, wName: ALL_COURTS[ci].women[wi] || `Ж${wi+1}`, score });
+        }
+      }
+      if (pairs.length > 0) courtRoundList.push({ ri, pairs });
+    }
+    roundsData.push({ courtName: COURT_META[ci].name, rounds: courtRoundList });
+  }
+
+  const savedAt = new Date().toISOString();
   const snapshot = {
     id:        Date.now(),
     name,
@@ -1296,7 +1316,9 @@ async function finishTournament() {
     players,
     totalScore,
     rPlayed,
-    savedAt:   new Date().toISOString(),
+    startTime: tournamentStartTime,
+    savedAt,
+    roundsData,
   };
 
   // Load history, prepend, save
@@ -1376,6 +1398,7 @@ async function resetTournament() {
   scores    = makeBlankScores();
   divScores = makeBlankDivScores();
   divRoster = makeBlankDivRoster();
+  tournamentStartTime = null;
   ['kotc3_scores','kotc3_divscores','kotc3_divroster'].forEach(k=>localStorage.removeItem(k));
   for (let i = 0; i < 8; i++) timerReset(i);
   buildAll();
@@ -1599,6 +1622,7 @@ async function applySettings() {
   scores    = makeBlankScores();
   divScores = makeBlankDivScores();
   divRoster = makeBlankDivRoster();
+  tournamentStartTime = null;
   saveState();
   buildAll();
   switchTab('roster');
@@ -2745,54 +2769,131 @@ async function gshWriteTournament(tournament) {
   const spreadsheetId = await gshGetOrCreateSpreadsheet();
   await gshEnsureSheet(spreadsheetId, sheetTitle);
 
-  // Build rows
-  const header = [
-    ['КОРОЛЬ ПЛОЩАДКИ — ПРОТОКОЛ'],
-    [tournament.name || 'Турнир'],
-    [dateStr],
-    [],
-    ['Кортов', tournament.nc, 'Игроков на корт', tournament.ppc, 'Раундов сыграно', tournament.rPlayed, 'Сумма очков', tournament.totalScore],
-    [],
-    ['Место', 'Имя', 'Пол', 'Корт', 'Очки'],
-  ];
-  const rows = tournament.players.map((p, i) => [
-    i + 1,
-    p.name,
-    p.gender === 'M' ? 'Мужчины' : 'Женщины',
-    p.courtName || '—',
-    p.totalPts,
-  ]);
-  const allRows = [...header, ...rows];
+  // ── Helpers ──
+  function fmtTime(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+  const playersAll = tournament.players || [];
+  const playersM   = playersAll.filter(p => p.gender === 'M');
+  const playersW   = playersAll.filter(p => p.gender === 'W' || p.gender === 'F');
+
+  // ── Build main sheet rows ──
+  const rows = [];
+
+  // Title block
+  rows.push(['КОРОЛЬ ПЛОЩАДКИ — ПРОТОКОЛ']);
+  rows.push([tournament.name || 'Турнир']);
+  rows.push([dateStr, '', '', 'Начало', fmtTime(tournament.startTime), '', 'Окончание', fmtTime(tournament.savedAt)]);
+  rows.push([]);
+  rows.push(['Кортов', tournament.nc, 'Игроков на корт', tournament.ppc, 'Раундов сыграно', tournament.rPlayed, 'Сумма очков', tournament.totalScore]);
+  rows.push([]);
+
+  // Overall ranking
+  rows.push(['ОБЩИЙ РЕЙТИНГ']);
+  rows.push(['Место', 'Имя', 'Пол', 'Корт', 'Очки']);
+  playersAll.forEach((p, i) => rows.push([i + 1, p.name, p.gender === 'M' ? 'М' : 'Ж', p.courtName || '—', p.totalPts]));
+  rows.push([]);
+
+  // Men ranking
+  rows.push(['♂ МУЖЧИНЫ']);
+  rows.push(['Место', 'Имя', 'Корт', 'Очки']);
+  playersM.forEach((p, i) => rows.push([i + 1, p.name, p.courtName || '—', p.totalPts]));
+  rows.push([]);
+
+  // Women ranking
+  rows.push(['♀ ЖЕНЩИНЫ']);
+  rows.push(['Место', 'Имя', 'Корт', 'Очки']);
+  playersW.forEach((p, i) => rows.push([i + 1, p.name, p.courtName || '—', p.totalPts]));
+  rows.push([]);
+
+  // Rounds breakdown
+  const roundsData = tournament.roundsData || [];
+  if (roundsData.length > 0) {
+    rows.push(['РАЗБИВКА ПО РАУНДАМ']);
+    rows.push(['Корт', 'Раунд', 'Мужчина', 'Женщина', 'Очки']);
+    for (const court of roundsData) {
+      for (const round of court.rounds) {
+        for (const pair of round.pairs) {
+          rows.push([court.courtName, `Раунд ${round.ri + 1}`, pair.mName, pair.wName, pair.score]);
+        }
+      }
+    }
+    rows.push([]);
+  }
+
+  // Court stats
+  if (roundsData.length > 0) {
+    rows.push(['СТАТИСТИКА ПО КОРТАМ']);
+    rows.push(['Корт', 'Раундов', 'Сумма очков', 'Ср. очков/раунд', 'Лучшая пара']);
+    for (const court of roundsData) {
+      let totalPts = 0, roundCount = 0, bestScore = -1, bestPair = '—';
+      for (const round of court.rounds) {
+        roundCount++;
+        for (const pair of round.pairs) {
+          totalPts += pair.score;
+          if (pair.score > bestScore) {
+            bestScore = pair.score;
+            bestPair = `${pair.mName} + ${pair.wName} (${pair.score})`;
+          }
+        }
+      }
+      const avg = roundCount > 0 ? (totalPts / roundCount).toFixed(1) : '—';
+      rows.push([court.courtName, roundCount, totalPts, avg, bestPair]);
+    }
+  }
 
   await gshFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetTitle + '!A1')}:append?valueInputOption=USER_ENTERED&insertDataOption=OVERWRITE`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ values: allRows }),
-    }
+    { method: 'POST', body: JSON.stringify({ values: rows }) }
   );
 
-  // Format header rows bold + color
-  const sheetId = await gshFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`)
-    .then(m => m.sheets?.find(s => s.properties.title === sheetTitle)?.properties?.sheetId);
+  // ── Formatting ──
+  const meta = await gshFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`);
+  const sheetId = meta.sheets?.find(s => s.properties.title === sheetTitle)?.properties?.sheetId;
 
   if (sheetId !== undefined) {
+    // Compute row indices of section headers for formatting
+    const overallHdrRow  = 7;  // "Место Имя Пол Корт Очки"
+    const mHdrRow        = overallHdrRow + playersAll.length + 2;
+    const wHdrRow        = mHdrRow + playersM.length + 2;
+    const roundsHdrRow   = roundsData.length > 0 ? wHdrRow + playersW.length + 2 : -1;
+    const courtsHdrRow   = roundsData.length > 0 ? roundsHdrRow + roundsData.reduce((s,c)=>s+c.rounds.reduce((a,r)=>a+r.pairs.length,0),0) + 2 : -1;
+
+    const mkSection = (r) => ({ repeatCell: { range:{sheetId,startRowIndex:r,endRowIndex:r+1}, cell:{userEnteredFormat:{
+      backgroundColor:{red:0.12,green:0.12,blue:0.22},
+      textFormat:{bold:true,foregroundColor:{red:0.53,green:0.53,blue:0.8}},
+    }}, fields:'userEnteredFormat' }});
+
+    const requests = [
+      // Title row
+      { repeatCell: { range:{sheetId,startRowIndex:0,endRowIndex:1}, cell:{userEnteredFormat:{
+        backgroundColor:{red:0.06,green:0.06,blue:0.1},
+        textFormat:{bold:true,fontSize:14,foregroundColor:{red:1,green:0.78,blue:0.2}},
+      }}, fields:'userEnteredFormat' }},
+      // Section labels
+      mkSection(6),   // ОБЩИЙ РЕЙТИНГ
+      mkSection(overallHdrRow),
+      mkSection(mHdrRow - 1),  // ♂ МУЖЧИНЫ
+      mkSection(mHdrRow),
+      mkSection(wHdrRow - 1),  // ♀ ЖЕНЩИНЫ
+      mkSection(wHdrRow),
+      // Auto-resize
+      { autoResizeDimensions: { dimensions:{sheetId,dimension:'COLUMNS',startIndex:0,endIndex:8} }},
+    ];
+    if (roundsHdrRow >= 0) {
+      requests.push(mkSection(roundsHdrRow - 1));  // РАЗБИВКА ПО РАУНДАМ
+      requests.push(mkSection(roundsHdrRow));
+    }
+    if (courtsHdrRow >= 0) {
+      requests.push(mkSection(courtsHdrRow - 1));  // СТАТИСТИКА ПО КОРТАМ
+      requests.push(mkSection(courtsHdrRow));
+    }
+
     await gshFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
-      body: JSON.stringify({ requests: [
-        // Title row bold + yellow bg
-        { repeatCell: { range:{sheetId,startRowIndex:0,endRowIndex:1}, cell:{userEnteredFormat:{
-          backgroundColor:{red:0.06,green:0.06,blue:0.1},
-          textFormat:{bold:true,fontSize:14,foregroundColor:{red:1,green:0.78,blue:0.2}},
-        }}, fields:'userEnteredFormat' }},
-        // Column headers bold
-        { repeatCell: { range:{sheetId,startRowIndex:6,endRowIndex:7}, cell:{userEnteredFormat:{
-          backgroundColor:{red:0.12,green:0.12,blue:0.22},
-          textFormat:{bold:true,foregroundColor:{red:0.53,green:0.53,blue:0.8}},
-        }}, fields:'userEnteredFormat' }},
-        // Auto-resize columns
-        { autoResizeDimensions: { dimensions:{sheetId,dimension:'COLUMNS',startIndex:0,endIndex:5} }},
-      ]})
+      body: JSON.stringify({ requests }),
     });
   }
 
@@ -3073,6 +3174,7 @@ function scoreClickHandler(e) {
     const base = old === null ? (dir > 0 ? 0 : -1) : old;
     const next = Math.max(0, Math.min(15, base + dir));
     if (old !== null && next === old) return;
+    if (!tournamentStartTime) tournamentStartTime = new Date().toISOString();
     scores[ci][mi][ri] = next;
     scoreTs['c'+ci] = Date.now();
     updateCourtWidget(ci, mi, ri, next);
