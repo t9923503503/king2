@@ -2313,22 +2313,7 @@ function renderSvod() {
         <span class="level-desc">${mpl.length}м · ${wpl.length}ж</span>
       </div>`;
 
-    if (!divsActive) {
-      // Mode 1: only Stage 1
-      html += renderStage1Table(g);
-    } else {
-      // Mode 2: Stage 1 seeding + Finals results side by side (stacked on mobile)
-      html += `<div class="svod-dual">
-        <div class="svod-half">
-          <div class="svod-half-lbl">Этап 1 — Квалификация</div>
-          ${renderStage1Table(g)}
-        </div>
-        <div class="svod-half">
-          <div class="svod-half-lbl">Финал — Итог</div>
-          ${renderFinalsTable(g)}
-        </div>
-      </div>`;
-    }
+    html += renderStage1Table(g);
     html += `</div>`;
   });
   return html;
