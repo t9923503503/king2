@@ -775,6 +775,16 @@ body{
 /* ── СТАТИСТИКА ──────────────────────────────────────────── */
 .stats-grid{display:flex;flex-direction:column;gap:12px;padding-bottom:32px}
 .stat-card{background:var(--card);border:1px solid #2a2a40;border-radius:14px;padding:16px}
+.stat-card-finals{border-color:#3a2d0a;background:linear-gradient(135deg,#1a1508,var(--card))}
+.final-div-block{margin-bottom:14px}
+.final-div-hdr{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;padding:4px 0 6px;border-bottom:1px solid #2a2a40;margin-bottom:6px}
+.final-gender-lbl{font-size:11px;color:var(--muted);margin:6px 0 4px;letter-spacing:.8px}
+.final-result-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #1e1e30}
+.final-res-name{flex:1;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.final-res-pts{font-size:12px;color:var(--muted);white-space:nowrap}
+.final-res-pts strong{color:var(--gold);font-size:14px;margin-left:2px}
+.final-pts-stage,.final-pts-fin{color:var(--muted)}
+.final-pts-plus,.final-pts-eq{margin:0 2px;color:#444}
 .stat-card-title{
   font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
   letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px
@@ -2504,7 +2514,63 @@ function renderStats() {
     return { name:COURT_META[ci].name, color:COURT_META[ci].color, total:t, avg:(t/n).toFixed(1) };
   });
 
+  // ── Final standings card (shown when finals are active) ─────
+  const divsActiveNow = activeDivKeys().some(k => divRoster[k].men.length > 0);
+  const DIV_INFO = {
+    hard:    { icon:'🏆', label:'HARD',    cls:'lh-hard'    },
+    advance: { icon:'⚡', label:'ADVANCE', cls:'lh-advance' },
+    medium:  { icon:'⚙️',  label:'MEDIUM',  cls:'lh-medium'  },
+    lite:    { icon:'🍀', label:'LITE',    cls:'lh-lite'    },
+  };
+  let finalCard = '';
+  if (divsActiveNow) {
+    let finalRows = '';
+    activeDivKeys().forEach((key, ki) => {
+      const men   = divGetRanked(key, 'M');
+      const women = divGetRanked(key, 'W');
+      if (!men.length && !women.length) return;
+      const globalOffset = ki * ppc;
+      const di = DIV_INFO[key];
+      finalRows += `<div class="final-div-block">
+        <div class="final-div-hdr ${di.cls}">${di.icon} ${di.label}</div>`;
+      // men
+      if (men.length) {
+        finalRows += `<div class="final-gender-lbl">🏋️ Мужчины</div>`;
+        men.forEach(p => {
+          const gp = globalOffset + p.place;
+          const stage1Pts = (() => { const sp = allP.find(x=>x.name===p.name&&x.gender==='M'); return sp?sp.pts:0; })();
+          finalRows += `<div class="final-result-row">
+            <span class="pb ${pbCls(gp)}" style="font-size:11px;padding:2px 5px;min-width:24px;text-align:center">${gp}</span>
+            <span class="final-res-name">${esc(p.name)}</span>
+            <span class="final-res-pts"><span class="final-pts-stage">${stage1Pts}</span><span class="final-pts-plus">+</span><span class="final-pts-fin">${p.pts}</span><span class="final-pts-eq">=</span><strong>${stage1Pts+p.pts}</strong></span>
+          </div>`;
+        });
+      }
+      // women
+      if (women.length) {
+        finalRows += `<div class="final-gender-lbl">👩 Женщины</div>`;
+        women.forEach(p => {
+          const gp = globalOffset + p.place;
+          const stage1Pts = (() => { const sp = allP.find(x=>x.name===p.name&&x.gender==='W'); return sp?sp.pts:0; })();
+          finalRows += `<div class="final-result-row">
+            <span class="pb ${pbCls(gp)}" style="font-size:11px;padding:2px 5px;min-width:24px;text-align:center">${gp}</span>
+            <span class="final-res-name">${esc(p.name)}</span>
+            <span class="final-res-pts"><span class="final-pts-stage">${stage1Pts}</span><span class="final-pts-plus">+</span><span class="final-pts-fin">${p.pts}</span><span class="final-pts-eq">=</span><strong>${stage1Pts+p.pts}</strong></span>
+          </div>`;
+        });
+      }
+      finalRows += `</div>`;
+    });
+    if (finalRows) {
+      finalCard = `<div class="stat-card stat-card-finals">
+        <div class="stat-card-title">🏆 ИТОГОВЫЕ МЕСТА <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px">Этап1 + Финал = Итог</span></div>
+        ${finalRows}
+      </div>`;
+    }
+  }
+
   return `<div class="stats-grid">
+    ${finalCard}
     <div class="stat-card voltage-card">
       <div class="stat-card-title">⚡ ВОЛЬТАЖ ТУРНИРА</div>
       <div class="voltage-num">${total}</div>
