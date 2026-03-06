@@ -808,6 +808,56 @@ body{
   color:var(--red);font-family:'Barlow Condensed',sans-serif;
   font-size:16px;font-weight:700;cursor:pointer;touch-action:manipulation;
 }
+/* ── Admin history log ── */
+.admin-log-card{
+  margin-top:18px;
+  background:#0a0a12;
+  border:1px solid #1e2a1e;
+  border-radius:12px;
+  overflow:hidden;
+}
+.admin-log-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;
+  background:#0f1a0f;
+  border-bottom:1px solid #1e2a1e;
+}
+.admin-log-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:.05em;
+  color:#4a9;
+}
+.admin-log-clear{
+  font-size:11px;padding:4px 10px;
+  background:#1a2a1a;border:1px solid #2a4a2a;border-radius:6px;
+  color:#6a9;cursor:pointer;
+}
+.admin-log-clear:active{opacity:.7}
+#admin-history-log{
+  max-height:260px;overflow-y:auto;
+  padding:6px 0;
+}
+.admin-log-empty{
+  font-family:'Courier New',monospace;font-size:11px;
+  color:#3a5a3a;text-align:center;padding:18px 0;
+}
+.admin-log-row{
+  display:block;
+  font-family:'Courier New',monospace;font-size:11px;
+  padding:3px 12px;
+  line-height:1.5;
+  color:#7ab87a;
+  border-bottom:1px solid #0e180e;
+}
+.admin-log-row.admin-log-minus{color:#c06060}
+.admin-log-row.admin-log-minus .admin-log-court{color:#d07070}
+.admin-log-time{color:#3a6a3a;margin-right:2px}
+.admin-log-row.admin-log-minus .admin-log-time{color:#6a3a3a}
+.admin-log-court{color:#4a9a6a;font-weight:700}
+.admin-log-sep{color:#2a4a2a}
+.admin-log-player{color:#9ab}
+.admin-log-delta{font-weight:700}
+.admin-log-total{color:#5a7a5a}
 .btn-sheets{
   width:100%;padding:14px;
   background:linear-gradient(135deg,#0d2a1a,#1a5c30);
@@ -1088,6 +1138,36 @@ const DIV_TIMER_IDX = { hard:4, advance:5, medium:6, lite:7 };
 // ── Tournament meta ─────────────────────────────────────────
 let tournamentMeta = { name: '', date: '' };
 let tournamentStartTime = null; // ISO string, set on first score entry
+let tournamentHistory = []; // Лента событий: [{time, courtName, playerName, delta, newScore}]
+
+function addHistoryEntry(courtName, playerName, delta, newScore) {
+  const now = new Date();
+  const time = now.toTimeString().slice(0, 8); // HH:mm:ss
+  tournamentHistory.unshift({ time, courtName, playerName, delta, newScore });
+  if (tournamentHistory.length > 200) tournamentHistory.length = 200; // ограничение
+  renderHistoryLog();
+}
+
+function renderHistoryLog() {
+  const el = document.getElementById('admin-history-log');
+  if (!el) return;
+  if (tournamentHistory.length === 0) {
+    el.innerHTML = '<div class="admin-log-empty">Событий пока нет</div>';
+    return;
+  }
+  el.innerHTML = tournamentHistory.map(e => {
+    const sign  = e.delta >= 0 ? '+' : '';
+    const cls   = e.delta < 0 ? ' admin-log-minus' : '';
+    return `<div class="admin-log-row${cls}">`
+      + `<span class="admin-log-time">[${e.time}]</span> `
+      + `<span class="admin-log-court">${esc(e.courtName)}</span>`
+      + `<span class="admin-log-sep"> | </span>`
+      + `<span class="admin-log-player">${esc(e.playerName)}</span>`
+      + `<span class="admin-log-delta">: ${sign}${e.delta}</span>`
+      + `<span class="admin-log-total"> (Всего: ${e.newScore})</span>`
+      + `</div>`;
+  }).join('');
+}
 
 // pending values while user fiddles with seg buttons (not yet applied)
 let _ppc = ppc;
@@ -1319,6 +1399,7 @@ function saveState() {
     localStorage.setItem('kotc3_divscores',  JSON.stringify(divScores));
     localStorage.setItem('kotc3_divroster',  JSON.stringify(divRoster));
     localStorage.setItem('kotc3_meta',       JSON.stringify(tournamentMeta));
+    localStorage.setItem('kotc3_history_log', JSON.stringify(tournamentHistory));
   } catch(e){}
   sbPush(); // синхронизировать с Supabase
 }
@@ -1377,6 +1458,8 @@ function loadState() {
     const mt = localStorage.getItem('kotc3_meta');
     if (mt) { try { tournamentMeta = JSON.parse(mt); } catch(e){} }
     if (dr) { const pd=JSON.parse(dr); if(pd) DIV_KEYS.forEach(k=>{if(pd[k]) divRoster[k]=pd[k];}); }
+    const hl = localStorage.getItem('kotc3_history_log');
+    if (hl) { try { const parsed = JSON.parse(hl); if (Array.isArray(parsed)) tournamentHistory = parsed; } catch(e){} }
   } catch(e){}
 }
 
@@ -1520,7 +1603,8 @@ async function resetTournament() {
   divScores = makeBlankDivScores();
   divRoster = makeBlankDivRoster();
   tournamentStartTime = null;
-  ['kotc3_scores','kotc3_divscores','kotc3_divroster'].forEach(k=>localStorage.removeItem(k));
+  tournamentHistory = [];
+  ['kotc3_scores','kotc3_divscores','kotc3_divroster','kotc3_history_log'].forEach(k=>localStorage.removeItem(k));
   for (let i = 0; i < 8; i++) timerReset(i);
   buildAll();
   switchTab(0);
@@ -1721,6 +1805,7 @@ async function switchTab(id) {
       if (!ok) { activeTabId = prevTabId; switchTab(prevTabId || 'svod'); return; }
     }
     screen.innerHTML = renderRoster();
+    renderHistoryLog();
   }
   if (id === 'stats')  screen.innerHTML = renderStats();
   if (id === 'hard' || id === 'advance' || id === 'medium' || id === 'lite') {
@@ -1904,6 +1989,13 @@ function renderRoster() {
   <div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(233,69,96,.2);border-radius:12px">
     <div style="color:var(--muted);font-size:12px;margin-bottom:10px;text-align:center">⚠️ Сброс очищает все результаты. Ростер сохраняется.</div>
     <button class="btn-reset-tournament" onclick="resetTournament()">🗑 Сбросить турнир</button>
+  </div>
+  <div class="admin-log-card">
+    <div class="admin-log-header">
+      <span class="admin-log-title">🖥 Технический лог</span>
+      <button class="admin-log-clear" onclick="tournamentHistory=[];localStorage.removeItem('kotc3_history_log');renderHistoryLog()">Очистить</button>
+    </div>
+    <div id="admin-history-log"></div>
   </div>`;
   return html;
 }
@@ -3419,9 +3511,10 @@ function scoreClickHandler(e) {
     const base = old === null ? (dir > 0 ? 0 : -1) : old;
     const next = Math.max(0, Math.min(15, base + dir));
     if (old !== null && next === old) return;
+    const delta_div = next - (old ?? 0);
     divScores[divKey][mi][ri] = next;
     scoreTs[divKey] = Date.now();
-    updateDivWidget(divKey, mi, ri, next);
+    updateDivWidget(divKey, mi, ri, next, delta_div);
     saveState();
   } else {
     // Court score
@@ -3430,16 +3523,17 @@ function scoreClickHandler(e) {
     const base = old === null ? (dir > 0 ? 0 : -1) : old;
     const next = Math.max(0, Math.min(15, base + dir));
     if (old !== null && next === old) return;
+    const delta_court = next - (old ?? 0);
     if (!tournamentStartTime) tournamentStartTime = new Date().toISOString();
     scores[ci][mi][ri] = next;
     scoreTs['c'+ci] = Date.now();
-    updateCourtWidget(ci, mi, ri, next);
+    updateCourtWidget(ci, mi, ri, next, delta_court);
     updateDivisions(); // recompute on every score change
     saveState();
   }
 }
 
-function updateCourtWidget(ci, mi, ri, val) {
+function updateCourtWidget(ci, mi, ri, val, delta) {
   const mx = val>=15, zr = val===0;
   // Score display
   const sd = document.getElementById(`sd-${ci}-${mi}-${ri}`);
@@ -3466,9 +3560,14 @@ function updateCourtWidget(ci, mi, ri, val) {
   // Instantly unlock next round button if this was the first score
   const courtNav = document.getElementById(`rnd-nav-${ci}`);
   if (courtNav) courtNav.innerHTML = renderCourtNavInner(ci);
+  // History log
+  if (delta !== undefined) {
+    const playerName = ALL_COURTS[ci]?.men?.[mi] || `М${mi+1}`;
+    addHistoryEntry(COURT_META[ci]?.name || `Корт ${ci+1}`, playerName, delta, val);
+  }
 }
 
-function updateDivWidget(key, mi, ri, val) {
+function updateDivWidget(key, mi, ri, val, delta) {
   const Nd = divRoster[key].men.length;
   const mx = val>=15, zr = val===0;
   const sd = document.getElementById(`dsd-${key}-${mi}-${ri}`);
@@ -3508,6 +3607,12 @@ function updateDivWidget(key, mi, ri, val) {
   const dci    = DIV_TIMER_IDX[key];
   const divNav = document.getElementById(`rnd-nav-${dci}`);
   if (divNav) divNav.innerHTML = renderDivNavInner(key);
+  // History log
+  if (delta !== undefined) {
+    const divLabels = { hard:'Хард', advance:'Адванс', medium:'Медиум', lite:'Лайт' };
+    const playerName = divRoster[key]?.men?.[mi] || `М${mi+1}`;
+    addHistoryEntry(divLabels[key] || key, playerName, delta, val);
+  }
 }
 
 // ════════════════════════════════════════════════════════════
