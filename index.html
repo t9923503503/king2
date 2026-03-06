@@ -741,6 +741,23 @@ body{
   color:var(--red);font-family:'Barlow Condensed',sans-serif;
   font-size:16px;font-weight:700;cursor:pointer;touch-action:manipulation;
 }
+.btn-sheets{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,#0d2a1a,#1a5c30);
+  border:1px solid rgba(106,191,105,.35);border-radius:10px;
+  color:#6ABF69;font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:700;cursor:pointer;touch-action:manipulation;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .2s;
+}
+.btn-sheets:disabled{opacity:.5;cursor:not-allowed}
+.sheets-url-input{
+  width:100%;padding:10px 12px;margin-bottom:10px;
+  background:#111122;border:1px solid #2a2a50;border-radius:8px;
+  color:var(--text);font-size:13px;font-family:'Barlow',sans-serif;
+  outline:none;box-sizing:border-box;
+}
+.sheets-url-input:focus{border-color:#6ABF69}
 .stats-empty{text-align:center;padding:60px 24px;color:var(--muted)}
 
 /* ── TOAST ───────────────────────────────────────────────── */
@@ -1297,6 +1314,60 @@ async function finishTournament() {
   const statsScreen = document.getElementById('screen-stats');
   if (statsScreen && statsScreen.classList.contains('active')) {
     statsScreen.innerHTML = renderStats();
+  }
+}
+
+async function exportToSheets(btn) {
+  const url = (document.getElementById('sheets-url-input')?.value || '').trim();
+  if (!url) { showToast('Укажите URL Google Apps Script'); return; }
+
+  const ranked = getAllRanked();
+  const allP   = [...ranked.M, ...ranked.W];
+
+  // Build enriched player list with totals
+  const rows = allP
+    .filter(p => p.pts > 0)
+    .map(p => {
+      const allRounds = getAllRoundsForPlayer(p);
+      const totalPts  = allRounds.reduce((a, b) => a + b, 0);
+      const rTotal    = allRounds.length;
+      const avg       = rTotal > 0 ? (totalPts / rTotal).toFixed(1) : '0';
+      return {
+        place:      p.globalRank,
+        tied:       p.globalTied ? '=' : '',
+        name:       p.name,
+        gender:     p.gender === 'M' ? 'М' : 'Ж',
+        court:      p.courtName,
+        totalPts,
+        rPlayed:    rTotal,
+        avg,
+        bestRound:  p.bestRound ?? 0,
+      };
+    })
+    .sort((a, b) => a.place - b.place || (a.gender < b.gender ? -1 : 1));
+
+  const payload = {
+    tournament: tournamentMeta.name || 'Без названия',
+    date:       tournamentMeta.date || new Date().toISOString().split('T')[0],
+    exportedAt: new Date().toISOString(),
+    rows,
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Отправка…';
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    showToast('Данные отправлены в Google Sheets ✓');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg> Экспортировать итоги`;
   }
 }
 
@@ -2154,6 +2225,19 @@ function renderStats() {
           <span class="bar-pts" style="font-size:12px;margin-left:6px">${c.total}оч avg${c.avg}</span>
         </div>`;
       }).join('')}
+    </div>
+
+    <div class="stat-card" style="border-color:#1a3a1a">
+      <div class="stat-card-title">📊 ЭКСПОРТ В GOOGLE SHEETS</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:10px">Вставьте URL вашего Google Apps Script (Web App) для экспорта итоговой таблицы.</div>
+      <input class="sheets-url-input" id="sheets-url-input"
+        type="url" placeholder="https://script.google.com/macros/s/.../exec"
+        value="${localStorage.getItem('kotc3_sheets_url')||''}"
+        oninput="localStorage.setItem('kotc3_sheets_url',this.value)">
+      <button class="btn-sheets" onclick="exportToSheets(this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+        Экспортировать итоги
+      </button>
     </div>
 
     <div class="stat-card" style="border-color:#3a1a1a">
