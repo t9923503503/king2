@@ -1144,7 +1144,7 @@ function addHistoryEntry(courtName, playerName, delta, newScore) {
   const now = new Date();
   const time = now.toTimeString().slice(0, 8); // HH:mm:ss
   tournamentHistory.unshift({ time, courtName, playerName, delta, newScore });
-  if (tournamentHistory.length > 200) tournamentHistory.length = 200; // ограничение
+  if (tournamentHistory.length > 300) tournamentHistory.length = 300; // ограничение
   renderHistoryLog();
 }
 
