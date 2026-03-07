@@ -3813,7 +3813,7 @@ if ('serviceWorker' in navigator) {
 // Each court has an independent timer that persists across tab switches.
 // Uses Date.now() anchoring so background/lock screen won't drift.
 // ════════════════════════════════════════════════════════════
-const TIMER_PRESETS = [10, 12, 15]; // minutes
+const TIMER_PRESETS = [5, 10, 15]; // minutes
 let timerTs = Array(8).fill(0); // last-action timestamp per timer (for smart merge)
 const timerState = Array.from({length:8}, () => ({  // 0-3: корты, 4-7: дивизионы
   preset:   10,           // selected preset in minutes
@@ -4139,7 +4139,7 @@ function timerSetPreset(ci, minutes) {
 function timerCustomStep(ci, step) {
   const ts = timerState[ci];
   const cur = ts.preset;
-  const next = Math.min(20, Math.max(9, cur + step));
+  const next = Math.min(20, Math.max(2, cur + step));
   if (next === cur) return;
   timerSetPreset(ci, next);
   // обновляем отображение кастомного поля для всей группы
