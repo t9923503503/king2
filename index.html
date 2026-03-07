@@ -4308,10 +4308,24 @@ function startTimerForRound(roundIndex) {
 
 // ── judgeStartsFirstRound() ───────────────────────────────────
 // Called when the judge manually presses "СТАРТ РАУНД 1".
-// Activates auto-round mode and starts Round 1 on all courts.
+// If timer is already running (e.g. after accidental ✕ press) — re-enables
+// auto-progression for the current round without resetting the timer.
+// Otherwise starts fresh from Round 1.
 function judgeStartsFirstRound() {
-  roundAuto.active = true;
-  startTimerForRound(0);
+  if (timerState[0].running && timerState[0].remaining > 0) {
+    // Timer is mid-round — just re-enable auto-progression, don't reset timer
+    roundAuto.active        = true;
+    roundAuto.round         = courtRound[0] || 0;
+    roundAuto.phase         = 'playing';
+    roundAuto._endCallback  = scheduleNextRound;
+    updateRoundAutoUI();
+    showToast(`▶ Раунд ${roundAuto.round + 1} из ${ppc}`);
+    saveTimerState();
+  } else {
+    // Timer stopped or expired — start fresh from Round 1
+    roundAuto.active = true;
+    startTimerForRound(0);
+  }
 }
 
 // ── stopRoundAuto() ───────────────────────────────────────────
@@ -4327,6 +4341,31 @@ function stopRoundAuto() {
   saveTimerState();
 }
 
+// ── stopRoundAutoGuard(ci) ────────────────────────────────────
+// Double-tap guard for the ✕ button to prevent accidental cancellation.
+const _stopRndGuardTimers = {};
+function stopRoundAutoGuard(ci) {
+  const btn = document.getElementById(`stop-rnd-btn-${ci}`);
+  if (!btn) { stopRoundAuto(); return; }
+  if (btn.dataset.confirming === '1') {
+    clearTimeout(_stopRndGuardTimers[ci]);
+    delete _stopRndGuardTimers[ci];
+    btn.dataset.confirming = '0';
+    btn.textContent = '✕';
+    btn.classList.remove('danger');
+    stopRoundAuto();
+    return;
+  }
+  btn.dataset.confirming = '1';
+  btn.textContent = '✕?';
+  btn.classList.add('danger');
+  _stopRndGuardTimers[ci] = setTimeout(() => {
+    btn.dataset.confirming = '0';
+    btn.textContent = '✕';
+    btn.classList.remove('danger');
+  }, 3000);
+}
+
 // ── _renderRoundAutoContent(ci) ──────────────────────────────
 // Returns the inner HTML for the auto-round bar at its current state.
 // Called from renderTimerBlock (static render) and updateRoundAutoUI (dynamic update).
@@ -4334,14 +4373,14 @@ function _renderRoundAutoContent(ci) {
   if (roundAuto.phase === 'playing' && roundAuto.active) {
     return `<div class="round-auto-status">
       <span class="rnd-label">▶ Раунд ${roundAuto.round + 1} / ${ppc}</span>
-      <button class="timer-btn timer-btn-reset" onclick="stopRoundAuto()" title="Остановить авто-режим">✕</button>
+      <button class="timer-btn timer-btn-reset" id="stop-rnd-btn-${ci}" onclick="stopRoundAutoGuard(${ci})" title="Остановить авто-режим (двойное нажатие)">✕</button>
     </div>`;
   }
   if (roundAuto.phase === 'break' && roundAuto.active) {
     const rem = roundAuto.breakEnd ? Math.max(0, Math.ceil((roundAuto.breakEnd - Date.now()) / 1000)) : ROUND_BREAK_SEC;
     return `<div class="round-auto-status break">
       <span class="rnd-label">⏸ Перерыв: <span id="rnd-break-disp-${ci}">${rem}</span>с → Раунд ${roundAuto.round + 2}</span>
-      <button class="timer-btn timer-btn-reset" onclick="stopRoundAuto()" title="Остановить авто-режим">✕</button>
+      <button class="timer-btn timer-btn-reset" id="stop-rnd-btn-${ci}" onclick="stopRoundAutoGuard(${ci})" title="Остановить авто-режим (двойное нажатие)">✕</button>
     </div>`;
   }
   if (roundAuto.phase === 'done') {
