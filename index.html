@@ -2299,7 +2299,20 @@ function renderSvod() {
         <span class="level-desc">${mpl.length}м · ${wpl.length}ж</span>
       </div>`;
 
-    html += renderStage1Table(g);
+    if (!divsActive) {
+      html += renderStage1Table(g);
+    } else {
+      html += `<div class="svod-dual">
+        <div class="svod-half">
+          <div class="svod-half-lbl">Этап 1 — Квалификация</div>
+          ${renderStage1Table(g)}
+        </div>
+        <div class="svod-half">
+          <div class="svod-half-lbl">Финал — Итог</div>
+          ${renderFinalsTable(g)}
+        </div>
+      </div>`;
+    }
     html += `</div>`;
   });
   return html;
