@@ -4371,27 +4371,68 @@ function restoreRoundAutoState() {
     const raw = localStorage.getItem('kotc_roundauto_v1');
     if (!raw) return;
     const s = JSON.parse(raw);
-    roundAuto.active   = !!s.active;
-    roundAuto.round    = (s.round !== undefined && s.round !== null) ? s.round : -1;
-    roundAuto.phase    = s.phase || 'idle';
-    roundAuto.breakEnd = s.breakEnd || null;
 
-    if (roundAuto.active && roundAuto.phase === 'playing') {
-      // Timer is still running (restored by loadTimerState); reconnect end-callback
-      roundAuto._endCallback = scheduleNextRound;
-    } else if (roundAuto.active && roundAuto.phase === 'break' && roundAuto.breakEnd) {
-      const remaining = roundAuto.breakEnd - Date.now();
+    if (!s.active) {
+      // Not active: only restore 'done' phase for UI
+      if (s.phase === 'done') { roundAuto.phase = 'done'; updateRoundAutoUI(); }
+      return;
+    }
+
+    const ri    = (s.round !== undefined && s.round !== null) ? s.round : -1;
+    const ts0   = timerState[0];
+    const timerAtFull = !ts0.running && ts0.total > 0 && ts0.remaining >= ts0.total;
+
+    if (s.phase === 'playing') {
+      // Don't restore if timer is at full preset (was reset/never started) or already expired —
+      // those states are inconsistent with an in-progress round.
+      if (timerAtFull || ts0.remaining <= 0) return;
+
+      // Timer is running or paused mid-round — restore fully
+      roundAuto.active = true;
+      roundAuto.round  = ri;
+      roundAuto.phase  = 'playing';
+
+      // Update courtRound and re-render courts to show the saved round
+      for (let ci = 0; ci < nc; ci++) {
+        courtRound[ci] = ri;
+        const screen = document.getElementById(`screen-${ci}`);
+        if (screen && screen.innerHTML) screen.innerHTML = renderCourt(ci);
+      }
+      // Highlight the active round button
+      for (let ci = 0; ci < nc; ci++) {
+        for (let i = 0; i < ppc; i++) {
+          const btn = document.getElementById(`rnd-${ci}-${i}`);
+          if (btn) btn.classList.toggle('active', i === ri);
+        }
+      }
+      if (ts0.running) roundAuto._endCallback = scheduleNextRound;
+
+    } else if (s.phase === 'break' && s.breakEnd) {
+      roundAuto.active   = true;
+      roundAuto.round    = ri;
+      roundAuto.phase    = 'break';
+      roundAuto.breakEnd = s.breakEnd;
+
+      // Show the completed round on court screens
+      for (let ci = 0; ci < nc; ci++) {
+        courtRound[ci] = ri;
+        const screen = document.getElementById(`screen-${ci}`);
+        if (screen && screen.innerHTML) screen.innerHTML = renderCourt(ci);
+      }
+
+      const remaining = s.breakEnd - Date.now();
+      clearTimeout(roundAuto._timeout);
       if (remaining > 0) {
-        clearTimeout(roundAuto._timeout);
         roundAuto._timeout = setTimeout(() => {
           if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
         }, remaining);
       } else {
-        // Break ended while page was closed — start next round immediately
-        if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
-        return; // startTimerForRound calls updateRoundAutoUI
+        // Break ended while page was closed — start next round
+        startTimerForRound(roundAuto.round + 1);
+        return;
       }
     }
+
     updateRoundAutoUI();
   } catch(e) {}
 }
