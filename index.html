@@ -965,6 +965,44 @@ body{
   transition:opacity .15s;
 }
 .confirm-btns button:active{opacity:.75}
+/* ── INFO MODAL ───────────────────────────────────────────── */
+#info-overlay{
+  display:none;position:fixed;inset:0;z-index:1003;
+  background:rgba(0,0,0,.82);align-items:flex-start;justify-content:center;
+  overflow-y:auto;padding:16px 0 32px;
+}
+#info-overlay.open{display:flex;}
+#info-box{
+  background:var(--dark3);border:1px solid #3a3a5e;border-radius:16px;
+  padding:24px 20px 20px;max-width:480px;width:94%;
+  box-shadow:0 24px 64px rgba(0,0,0,.8);margin:auto;
+}
+#info-box h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;
+  color:var(--gold);margin:0 0 4px;}
+#info-box .info-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+#info-box h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;
+  color:var(--text);margin:16px 0 6px;border-bottom:1px solid #2a2a45;padding-bottom:4px;}
+#info-box p,#info-box li{font-size:14px;line-height:1.55;color:var(--muted);margin:4px 0;}
+#info-box li{margin-left:16px;}
+#info-box strong{color:var(--text);}
+#info-box .info-div{display:flex;gap:8px;flex-direction:column;margin:6px 0;}
+#info-box .info-div-row{display:flex;align-items:center;gap:8px;font-size:13px;}
+#info-box .info-div-row .tag{
+  font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.5px;
+  padding:2px 8px;border-radius:6px;white-space:nowrap;min-width:80px;text-align:center;}
+#info-box .tag-hard{background:#e94560;color:#fff;}
+#info-box .tag-adv{background:#f5a623;color:#000;}
+#info-box .tag-med{background:#4DA8DA;color:#fff;}
+#info-box .tag-lite{background:#6ABF69;color:#fff;}
+#info-box .info-tip{
+  background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);
+  border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-top:14px;}
+#info-close{
+  display:block;width:100%;margin-top:18px;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;
+  padding:11px;border-radius:10px;border:none;cursor:pointer;
+  background:var(--card);color:var(--muted);transition:opacity .15s;}
+#info-close:active{opacity:.7}
 #confirm-ok{background:var(--red);color:#fff;}
 #confirm-cancel{background:var(--card);color:var(--muted);}
 
@@ -1691,6 +1729,12 @@ function buildNav() {
     b.addEventListener('click', ()=>switchTab(tab));
     top.appendChild(b);
   });
+  // Info button
+  const bInfo = document.createElement('button');
+  bInfo.className = 'nb'; bInfo.title = 'Как играть';
+  bInfo.textContent = 'ℹ️';
+  bInfo.addEventListener('click', showInfo);
+  top.appendChild(bInfo);
   nav.appendChild(top);
 
   // ── Ряд пиллов: корты + разделитель + дивизионы ─────────
@@ -3701,6 +3745,24 @@ function pbCls(p){ return p===1?'pb1':p===2?'pb2':p===3?'pb3':'pbn'; }
 function esc(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
 
 let _toastTimer=null;
+function showInfo() {
+  // Render dynamic ppc-based division ranges
+  const box = document.getElementById('info-box');
+  box.querySelectorAll('.info-div-row span:last-child').forEach((el, i) => {
+    const labels = [
+      `Места 1–${ppc} — сильнейшие`,
+      `Места ${ppc+1}–${ppc*2} (при 4 кортах)`,
+      `Места ${ppc*2+1}–${ppc*3}`,
+      `Места ${ppc*3+1}+ — оставшиеся`,
+    ];
+    if (labels[i]) el.textContent = labels[i];
+  });
+  document.getElementById('info-overlay').classList.add('open');
+}
+function closeInfo() {
+  document.getElementById('info-overlay').classList.remove('open');
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -4128,6 +4190,49 @@ timerTick(); // start global animation loop
       <button id="confirm-cancel">Отмена</button>
       <button id="confirm-ok">ОК</button>
     </div>
+  </div>
+</div>
+<!-- Info / rules modal -->
+<div id="info-overlay" onclick="if(event.target===this)closeInfo()">
+  <div id="info-box">
+    <h2>📋 КАК ИГРАТЬ</h2>
+    <div class="info-sub">King of the Court — смешанные пары</div>
+
+    <h3>⚽ Формат матча</h3>
+    <p>Каждый раунд — <strong>одна пара</strong> (мужчина + женщина) против всего двора. Зарабатывай очки от <strong>0 до 15</strong> за раунд кнопками <strong>+</strong> и <strong>−</strong>.</p>
+
+    <h3>🔄 Ротация пар</h3>
+    <p>В каждом раунде пары меняются автоматически — за весь этап каждый мужчина сыграет в паре с каждой женщиной ровно по одному разу.</p>
+    <p>Очки женщины выставляются <strong>автоматически</strong> (AUTO) — равны очкам её партнёра в этом раунде.</p>
+
+    <h3>📊 Рейтинг этапа 1</h3>
+    <ul>
+      <li>Основной критерий — <strong>сумма очков</strong> за все раунды</li>
+      <li>При равенстве: лучший раунд → количество побед (раунд ≥ 8 очков)</li>
+      <li>Общий рейтинг строится по всем кортам вместе</li>
+    </ul>
+
+    <h3>🏆 Дивизионы (Финалы)</h3>
+    <p>После Этапа 1 игроки распределяются по дивизионам:</p>
+    <div class="info-div">
+      <div class="info-div-row"><span class="tag tag-hard">🔥 HARD</span><span>Места 1–5 — сильнейшие</span></div>
+      <div class="info-div-row"><span class="tag tag-adv">⚡ ADVANCE</span><span>Места 6–10 (при 4 кортах)</span></div>
+      <div class="info-div-row"><span class="tag tag-med">⚙️ MEDIUM</span><span>Места 11–15</span></div>
+      <div class="info-div-row"><span class="tag tag-lite">🍀 LITE</span><span>Места 16+ — оставшиеся</span></div>
+    </div>
+    <p>Финалы — тот же формат (раунды 0–15), но внутри своего дивизиона.</p>
+
+    <h3>📱 Вкладки</h3>
+    <ul>
+      <li><strong>К1 / К2 / К3</strong> — вводить очки на кортах Этапа 1</li>
+      <li><strong>HARD / MEDIUM / LITE</strong> — финалы дивизионов</li>
+      <li><strong>СВОД</strong> — общий рейтинг и итоги финала</li>
+      <li><strong>СТАТ</strong> — подробная статистика игроков</li>
+    </ul>
+
+    <div class="info-tip">💡 Переключение раунда требует <strong>двойного нажатия</strong> — сначала кнопка станет «✓», затем подтверди ещё раз.</div>
+
+    <button id="info-close" onclick="closeInfo()">Закрыть</button>
   </div>
 </div>
 <script>
