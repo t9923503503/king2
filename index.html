@@ -775,6 +775,16 @@ body{
 /* ── СТАТИСТИКА ──────────────────────────────────────────── */
 .stats-grid{display:flex;flex-direction:column;gap:12px;padding-bottom:32px}
 .stat-card{background:var(--card);border:1px solid #2a2a40;border-radius:14px;padding:16px}
+.stat-card-finals{border-color:#3a2d0a;background:linear-gradient(135deg,#1a1508,var(--card))}
+.final-div-block{margin-bottom:14px}
+.final-div-hdr{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;padding:4px 0 6px;border-bottom:1px solid #2a2a40;margin-bottom:6px}
+.final-gender-lbl{font-size:11px;color:var(--muted);margin:6px 0 4px;letter-spacing:.8px}
+.final-result-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #1e1e30}
+.final-res-name{flex:1;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.final-res-pts{font-size:12px;color:var(--muted);white-space:nowrap}
+.final-res-pts strong{color:var(--gold);font-size:14px;margin-left:2px}
+.final-pts-stage,.final-pts-fin{color:var(--muted)}
+.final-pts-plus,.final-pts-eq{margin:0 2px;color:#444}
 .stat-card-title{
   font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
   letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px
@@ -808,6 +818,73 @@ body{
   color:var(--red);font-family:'Barlow Condensed',sans-serif;
   font-size:16px;font-weight:700;cursor:pointer;touch-action:manipulation;
 }
+/* ── Admin history log ── */
+.admin-log-card{
+  margin-top:18px;
+  background:#0a0a12;
+  border:1px solid #1e2a1e;
+  border-radius:12px;
+  overflow:hidden;
+}
+.admin-log-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;
+  background:#0f1a0f;
+  border-bottom:1px solid #1e2a1e;
+}
+.admin-log-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:.05em;
+  color:#4a9;
+}
+.admin-log-clear{
+  font-size:11px;padding:4px 10px;
+  background:#1a2a1a;border:1px solid #2a4a2a;border-radius:6px;
+  color:#6a9;cursor:pointer;
+}
+.admin-log-clear:active{opacity:.7}
+#admin-history-log{
+  max-height:260px;overflow-y:auto;
+  padding:6px 0;
+}
+.admin-log-empty{
+  font-family:'Courier New',monospace;font-size:11px;
+  color:#3a5a3a;text-align:center;padding:18px 0;
+}
+.admin-log-row{
+  display:block;
+  font-family:'Courier New',monospace;font-size:11px;
+  padding:3px 12px;
+  line-height:1.5;
+  color:#7ab87a;
+  border-bottom:1px solid #0e180e;
+}
+.admin-log-row.admin-log-minus{color:#c06060}
+.admin-log-row.admin-log-minus .admin-log-court{color:#d07070}
+.admin-log-time{color:#3a6a3a;margin-right:2px}
+.admin-log-row.admin-log-minus .admin-log-time{color:#6a3a3a}
+.admin-log-court{color:#4a9a6a;font-weight:700}
+.admin-log-sep{color:#2a4a2a}
+.admin-log-player{color:#9ab}
+.admin-log-delta{font-weight:700}
+.admin-log-total{color:#5a7a5a}
+.btn-sheets{
+  width:100%;padding:14px;
+  background:linear-gradient(135deg,#0d2a1a,#1a5c30);
+  border:1px solid rgba(106,191,105,.35);border-radius:10px;
+  color:#6ABF69;font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:700;cursor:pointer;touch-action:manipulation;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .2s;
+}
+.btn-sheets:disabled{opacity:.5;cursor:not-allowed}
+.sheets-url-input{
+  width:100%;padding:10px 12px;margin-bottom:10px;
+  background:#111122;border:1px solid #2a2a50;border-radius:8px;
+  color:var(--text);font-size:13px;font-family:'Barlow',sans-serif;
+  outline:none;box-sizing:border-box;
+}
+.sheets-url-input:focus{border-color:#6ABF69}
 .stats-empty{text-align:center;padding:60px 24px;color:var(--muted)}
 
 /* ── TOAST ───────────────────────────────────────────────── */
@@ -888,6 +965,44 @@ body{
   transition:opacity .15s;
 }
 .confirm-btns button:active{opacity:.75}
+/* ── INFO MODAL ───────────────────────────────────────────── */
+#info-overlay{
+  display:none;position:fixed;inset:0;z-index:1003;
+  background:rgba(0,0,0,.82);align-items:flex-start;justify-content:center;
+  overflow-y:auto;padding:16px 0 32px;
+}
+#info-overlay.open{display:flex;}
+#info-box{
+  background:var(--dark3);border:1px solid #3a3a5e;border-radius:16px;
+  padding:24px 20px 20px;max-width:480px;width:94%;
+  box-shadow:0 24px 64px rgba(0,0,0,.8);margin:auto;
+}
+#info-box h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;
+  color:var(--gold);margin:0 0 4px;}
+#info-box .info-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+#info-box h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;
+  color:var(--text);margin:16px 0 6px;border-bottom:1px solid #2a2a45;padding-bottom:4px;}
+#info-box p,#info-box li{font-size:14px;line-height:1.55;color:var(--muted);margin:4px 0;}
+#info-box li{margin-left:16px;}
+#info-box strong{color:var(--text);}
+#info-box .info-div{display:flex;gap:8px;flex-direction:column;margin:6px 0;}
+#info-box .info-div-row{display:flex;align-items:center;gap:8px;font-size:13px;}
+#info-box .info-div-row .tag{
+  font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.5px;
+  padding:2px 8px;border-radius:6px;white-space:nowrap;min-width:80px;text-align:center;}
+#info-box .tag-hard{background:#e94560;color:#fff;}
+#info-box .tag-adv{background:#f5a623;color:#000;}
+#info-box .tag-med{background:#4DA8DA;color:#fff;}
+#info-box .tag-lite{background:#6ABF69;color:#fff;}
+#info-box .info-tip{
+  background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);
+  border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin-top:14px;}
+#info-close{
+  display:block;width:100%;margin-top:18px;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;
+  padding:11px;border-radius:10px;border:none;cursor:pointer;
+  background:var(--card);color:var(--muted);transition:opacity .15s;}
+#info-close:active{opacity:.7}
 #confirm-ok{background:var(--red);color:#fff;}
 #confirm-cancel{background:var(--card);color:var(--muted);}
 
@@ -1029,6 +1144,24 @@ body{
   transition:width .5s linear, background .3s;
 }
 .timer-progress-fill.danger{background:#e94560}
+/* ── AUTO-ROUND BAR ──────────────────────────────────────── */
+.round-auto-bar{margin-top:8px;border-top:1px solid #2a2a45;padding-top:8px;}
+.round-auto-status{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;
+  color:var(--text);
+}
+.round-auto-status .rnd-label{flex:1}
+.round-auto-status.break .rnd-label{color:#4DA8DA}
+.round-auto-status.done  .rnd-label{color:var(--muted)}
+.round-auto-start-btn{
+  width:100%;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;
+  padding:8px 0;border-radius:8px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#1a6b35,#156128);color:#7fffaa;
+  letter-spacing:.5px;transition:opacity .15s;
+}
+.round-auto-start-btn:active{opacity:.75}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1070,6 +1203,37 @@ const DIV_TIMER_IDX = { hard:4, advance:5, medium:6, lite:7 };
 
 // ── Tournament meta ─────────────────────────────────────────
 let tournamentMeta = { name: '', date: '' };
+let tournamentStartTime = null; // ISO string, set on first score entry
+let tournamentHistory = []; // Лента событий: [{time, courtName, playerName, delta, newScore}]
+
+function addHistoryEntry(courtName, playerName, delta, newScore) {
+  const now = new Date();
+  const time = now.toTimeString().slice(0, 8); // HH:mm:ss
+  tournamentHistory.unshift({ time, courtName, playerName, delta, newScore });
+  if (tournamentHistory.length > 450) tournamentHistory.length = 450; // ограничение
+  renderHistoryLog();
+}
+
+function renderHistoryLog() {
+  const el = document.getElementById('admin-history-log');
+  if (!el) return;
+  if (tournamentHistory.length === 0) {
+    el.innerHTML = '<div class="admin-log-empty">Событий пока нет</div>';
+    return;
+  }
+  el.innerHTML = tournamentHistory.map(e => {
+    const sign  = e.delta >= 0 ? '+' : '';
+    const cls   = e.delta < 0 ? ' admin-log-minus' : '';
+    return `<div class="admin-log-row${cls}">`
+      + `<span class="admin-log-time">[${e.time}]</span> `
+      + `<span class="admin-log-court">${esc(e.courtName)}</span>`
+      + `<span class="admin-log-sep"> | </span>`
+      + `<span class="admin-log-player">${esc(e.playerName)}</span>`
+      + `<span class="admin-log-delta">: ${sign}${e.delta}</span>`
+      + `<span class="admin-log-total"> (Всего: ${e.newScore})</span>`
+      + `</div>`;
+  }).join('');
+}
 
 // pending values while user fiddles with seg buttons (not yet applied)
 let _ppc = ppc;
@@ -1301,15 +1465,27 @@ function saveState() {
     localStorage.setItem('kotc3_divscores',  JSON.stringify(divScores));
     localStorage.setItem('kotc3_divroster',  JSON.stringify(divRoster));
     localStorage.setItem('kotc3_meta',       JSON.stringify(tournamentMeta));
+    localStorage.setItem('kotc3_history_log', JSON.stringify(tournamentHistory));
   } catch(e){}
   sbPush(); // синхронизировать с Supabase
+}
+
+function semverLt(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] ?? 0, nb = pb[i] ?? 0;
+    if (na < nb) return true;
+    if (na > nb) return false;
+  }
+  return false;
 }
 
 function loadState() {
   try {
     // Version migration: if old version or no version, clear scores to avoid corruption
     const ver = localStorage.getItem('kotc_version');
-    if (!ver || ver < '1.1') {
+    if (!ver || semverLt(ver, '1.1')) {
       ['kotc3_scores','kotc3_divscores','kotc3_divroster'].forEach(k=>localStorage.removeItem(k));
       localStorage.setItem('kotc_version','1.1');
     }
@@ -1348,6 +1524,8 @@ function loadState() {
     const mt = localStorage.getItem('kotc3_meta');
     if (mt) { try { tournamentMeta = JSON.parse(mt); } catch(e){} }
     if (dr) { const pd=JSON.parse(dr); if(pd) DIV_KEYS.forEach(k=>{if(pd[k]) divRoster[k]=pd[k];}); }
+    const hl = localStorage.getItem('kotc3_history_log');
+    if (hl) { try { const parsed = JSON.parse(hl); if (Array.isArray(parsed)) tournamentHistory = parsed; } catch(e){} }
   } catch(e){}
 }
 
@@ -1380,6 +1558,25 @@ async function finishTournament() {
     return s;
   })();
 
+  // Build rounds breakdown: roundsData[ci] = { courtName, rounds: [{ri, pairs:[{mName,wName,score}]}] }
+  const roundsData = [];
+  for (let ci = 0; ci < nc; ci++) {
+    const courtRoundList = [];
+    for (let ri = 0; ri < ppc; ri++) {
+      const pairs = [];
+      for (let mi = 0; mi < ppc; mi++) {
+        const score = scores[ci]?.[mi]?.[ri] ?? null;
+        if (score !== null) {
+          const wi = (mi + ri) % ppc;
+          pairs.push({ mName: ALL_COURTS[ci].men[mi] || `М${mi+1}`, wName: ALL_COURTS[ci].women[wi] || `Ж${wi+1}`, score });
+        }
+      }
+      if (pairs.length > 0) courtRoundList.push({ ri, pairs });
+    }
+    roundsData.push({ courtName: COURT_META[ci].name, rounds: courtRoundList });
+  }
+
+  const savedAt = new Date().toISOString();
   const snapshot = {
     id:        Date.now(),
     name,
@@ -1389,7 +1586,9 @@ async function finishTournament() {
     players,
     totalScore,
     rPlayed,
-    savedAt:   new Date().toISOString(),
+    startTime: tournamentStartTime,
+    savedAt,
+    roundsData,
   };
 
   // Load history, prepend, save
@@ -1410,12 +1609,68 @@ async function finishTournament() {
   }
 }
 
+async function exportToSheets(btn) {
+  const url = (document.getElementById('sheets-url-input')?.value || '').trim();
+  if (!url) { showToast('Укажите URL Google Apps Script'); return; }
+
+  const ranked = getAllRanked();
+  const allP   = [...ranked.M, ...ranked.W];
+
+  // Build enriched player list with totals
+  const rows = allP
+    .filter(p => p.pts > 0)
+    .map(p => {
+      const allRounds = getAllRoundsForPlayer(p);
+      const totalPts  = allRounds.reduce((a, b) => a + b, 0);
+      const rTotal    = allRounds.length;
+      const avg       = rTotal > 0 ? (totalPts / rTotal).toFixed(1) : '0';
+      return {
+        place:      p.globalRank,
+        tied:       p.globalTied ? '=' : '',
+        name:       p.name,
+        gender:     p.gender === 'M' ? 'М' : 'Ж',
+        court:      p.courtName,
+        totalPts,
+        rPlayed:    rTotal,
+        avg,
+        bestRound:  p.bestRound ?? 0,
+      };
+    })
+    .sort((a, b) => a.place - b.place || (a.gender < b.gender ? -1 : 1));
+
+  const payload = {
+    tournament: tournamentMeta.name || 'Без названия',
+    date:       tournamentMeta.date || new Date().toISOString().split('T')[0],
+    exportedAt: new Date().toISOString(),
+    rows,
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Отправка…';
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    showToast('Данные отправлены в Google Sheets ✓');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg> Экспортировать итоги`;
+  }
+}
+
 async function resetTournament() {
   if (!await showConfirm('Сбросить ВСЕ результаты?\n\nРостер сохранится, все очки обнулятся.')) return;
   scores    = makeBlankScores();
   divScores = makeBlankDivScores();
   divRoster = makeBlankDivRoster();
-  ['kotc3_scores','kotc3_divscores','kotc3_divroster'].forEach(k=>localStorage.removeItem(k));
+  tournamentStartTime = null;
+  tournamentHistory = [];
+  ['kotc3_scores','kotc3_divscores','kotc3_divroster','kotc3_history_log'].forEach(k=>localStorage.removeItem(k));
   for (let i = 0; i < 8; i++) timerReset(i);
   buildAll();
   switchTab(0);
@@ -1492,6 +1747,12 @@ function buildNav() {
     b.addEventListener('click', ()=>switchTab(tab));
     top.appendChild(b);
   });
+  // Info button
+  const bInfo = document.createElement('button');
+  bInfo.className = 'nb'; bInfo.title = 'Как играть';
+  bInfo.textContent = 'ℹ️';
+  bInfo.addEventListener('click', showInfo);
+  top.appendChild(bInfo);
   nav.appendChild(top);
 
   // ── Ряд пиллов: корты + разделитель + дивизионы ─────────
@@ -1616,6 +1877,7 @@ async function switchTab(id) {
       if (!ok) { activeTabId = prevTabId; switchTab(prevTabId || 'svod'); return; }
     }
     screen.innerHTML = renderRoster();
+    renderHistoryLog();
   }
   if (id === 'stats')  screen.innerHTML = renderStats();
   if (id === 'hard' || id === 'advance' || id === 'medium' || id === 'lite') {
@@ -1647,6 +1909,7 @@ async function applySettings() {
   scores    = makeBlankScores();
   divScores = makeBlankDivScores();
   divRoster = makeBlankDivRoster();
+  tournamentStartTime = null;
   saveState();
   buildAll();
   switchTab('roster');
@@ -1691,6 +1954,17 @@ function applyRoster() {
   updateDivisions();
   saveState();
   showToast('✅ Ростер сохранён');
+}
+
+async function clearRosterNames() {
+  if (!await showConfirm('Очистить состав?\n\nВсе имена будут удалены — можно вписать новых игроков.')) return;
+  for (let ci = 0; ci < 4; ci++) {
+    ALL_COURTS[ci].men   = Array.from({length: ppc}, () => '');
+    ALL_COURTS[ci].women = Array.from({length: ppc}, () => '');
+  }
+  localStorage.removeItem('kotc3_roster'); // убираем кэш чтобы не вернулся при перезагрузке
+  switchTab('roster');
+  showToast('🧹 Состав очищен');
 }
 
 async function resetRosterNames() {
@@ -1790,7 +2064,8 @@ function renderRoster() {
 
   html += `<div class="roster-save-bar">
     <button class="btn-rsr primary"   onclick="applyRoster()">✅ Сохранить</button>
-    <button class="btn-rsr sec"       onclick="resetRosterNames()">↺ Сброс имён</button>
+    <button class="btn-rsr sec"       onclick="clearRosterNames()">🧹 Новый состав</button>
+    <button class="btn-rsr sec"       onclick="resetRosterNames()">↺ Стандарт</button>
   </div>
   <button class="btn-finish" onclick="finishTournament()">
     🏁 ЗАВЕРШИТЬ ТУРНИР
@@ -1798,6 +2073,13 @@ function renderRoster() {
   <div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(233,69,96,.2);border-radius:12px">
     <div style="color:var(--muted);font-size:12px;margin-bottom:10px;text-align:center">⚠️ Сброс очищает все результаты. Ростер сохраняется.</div>
     <button class="btn-reset-tournament" onclick="resetTournament()">🗑 Сбросить турнир</button>
+  </div>
+  <div class="admin-log-card">
+    <div class="admin-log-header">
+      <span class="admin-log-title">🖥 Технический лог</span>
+      <button class="admin-log-clear" onclick="tournamentHistory=[];localStorage.removeItem('kotc3_history_log');renderHistoryLog()">Очистить</button>
+    </div>
+    <div id="admin-history-log"></div>
   </div>`;
   return html;
 }
@@ -2033,16 +2315,7 @@ function renderSvod() {
         <th class="td-pts">Оч·1</th>
         <th class="td-avg">avg/р</th>
       </tr></thead><tbody>`;
-    const allPlayers = [...mpl,...wpl];
-    // Динамические разделители по activeDivKeys
-    const sepLabels = {};
-    const ALL_SEP = { advance:{cls:'sep-advance',label:'⚡ ADVANCE'}, medium:{cls:'sep-medium',label:'⚙️ MEDIUM'}, lite:{cls:'sep-lite',label:'🍀 LITE'} };
-    activeDivKeys().forEach((key, i) => {
-      if (i === 0) return; // первый дивизион — разделитель перед ним не нужен
-      const boundary = i * ppc; // после этого глобального ранга
-      if (ALL_SEP[key]) sepLabels[boundary] = ALL_SEP[key];
-    });
-    allPlayers.forEach(p => {
+    [...mpl,...wpl].forEach(p => {
       const avg = p.rPlayed>0 ? (p.pts/p.rPlayed).toFixed(1) : '—';
       t += `<tr>
         <td class="td-rank"><span class="pb ${pbCls(p.globalRank)}">${p.globalRank}${p.globalTied?'<sup>=</sup>':''}</span></td>
@@ -2051,11 +2324,6 @@ function renderSvod() {
         <td class="td-pts">${p.pts}</td>
         <td class="td-avg">${avg}</td>
       </tr>`;
-      // Разделитель после границы дивизиона (только если нет ничьей)
-      if (sepLabels[p.globalRank] && !p.globalTied) {
-        const sep = sepLabels[p.globalRank];
-        t += `<tr class="svod-div-sep ${sep.cls}"><td colspan="5"><div class="svod-div-sep-inner"><div class="svod-div-sep-line"></div><span>${sep.label}</span><div class="svod-div-sep-line"></div></div></td></tr>`;
-      }
     });
     return t + `</tbody></table></div>`;
   }
@@ -2106,10 +2374,8 @@ function renderSvod() {
       </div>`;
 
     if (!divsActive) {
-      // Mode 1: only Stage 1
       html += renderStage1Table(g);
     } else {
-      // Mode 2: Stage 1 seeding + Finals results side by side (stacked on mobile)
       html += `<div class="svod-dual">
         <div class="svod-half">
           <div class="svod-half-lbl">Этап 1 — Квалификация</div>
@@ -2306,7 +2572,63 @@ function renderStats() {
     return { name:COURT_META[ci].name, color:COURT_META[ci].color, total:t, avg:(t/n).toFixed(1) };
   });
 
+  // ── Final standings card (shown when finals are active) ─────
+  const divsActiveNow = activeDivKeys().some(k => divRoster[k].men.length > 0);
+  const DIV_INFO = {
+    hard:    { icon:'🏆', label:'HARD',    cls:'lh-hard'    },
+    advance: { icon:'⚡', label:'ADVANCE', cls:'lh-advance' },
+    medium:  { icon:'⚙️',  label:'MEDIUM',  cls:'lh-medium'  },
+    lite:    { icon:'🍀', label:'LITE',    cls:'lh-lite'    },
+  };
+  let finalCard = '';
+  if (divsActiveNow) {
+    let finalRows = '';
+    activeDivKeys().forEach((key, ki) => {
+      const men   = divGetRanked(key, 'M');
+      const women = divGetRanked(key, 'W');
+      if (!men.length && !women.length) return;
+      const globalOffset = ki * ppc;
+      const di = DIV_INFO[key];
+      finalRows += `<div class="final-div-block">
+        <div class="final-div-hdr ${di.cls}">${di.icon} ${di.label}</div>`;
+      // men
+      if (men.length) {
+        finalRows += `<div class="final-gender-lbl">🏋️ Мужчины</div>`;
+        men.forEach(p => {
+          const gp = globalOffset + p.place;
+          const stage1Pts = (() => { const sp = allP.find(x=>x.name===p.name&&x.gender==='M'); return sp?sp.pts:0; })();
+          finalRows += `<div class="final-result-row">
+            <span class="pb ${pbCls(gp)}" style="font-size:11px;padding:2px 5px;min-width:24px;text-align:center">${gp}</span>
+            <span class="final-res-name">${esc(p.name)}</span>
+            <span class="final-res-pts"><span class="final-pts-stage">${stage1Pts}</span><span class="final-pts-plus">+</span><span class="final-pts-fin">${p.pts}</span><span class="final-pts-eq">=</span><strong>${stage1Pts+p.pts}</strong></span>
+          </div>`;
+        });
+      }
+      // women
+      if (women.length) {
+        finalRows += `<div class="final-gender-lbl">👩 Женщины</div>`;
+        women.forEach(p => {
+          const gp = globalOffset + p.place;
+          const stage1Pts = (() => { const sp = allP.find(x=>x.name===p.name&&x.gender==='W'); return sp?sp.pts:0; })();
+          finalRows += `<div class="final-result-row">
+            <span class="pb ${pbCls(gp)}" style="font-size:11px;padding:2px 5px;min-width:24px;text-align:center">${gp}</span>
+            <span class="final-res-name">${esc(p.name)}</span>
+            <span class="final-res-pts"><span class="final-pts-stage">${stage1Pts}</span><span class="final-pts-plus">+</span><span class="final-pts-fin">${p.pts}</span><span class="final-pts-eq">=</span><strong>${stage1Pts+p.pts}</strong></span>
+          </div>`;
+        });
+      }
+      finalRows += `</div>`;
+    });
+    if (finalRows) {
+      finalCard = `<div class="stat-card stat-card-finals">
+        <div class="stat-card-title">🏆 ИТОГОВЫЕ МЕСТА <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px">Этап1 + Финал = Итог</span></div>
+        ${finalRows}
+      </div>`;
+    }
+  }
+
   return `<div class="stats-grid">
+    ${finalCard}
     <div class="stat-card voltage-card">
       <div class="stat-card-title">⚡ ВОЛЬТАЖ ТУРНИРА</div>
       <div class="voltage-num">${total}</div>
@@ -2859,54 +3181,131 @@ async function gshWriteTournament(tournament) {
   const spreadsheetId = await gshGetOrCreateSpreadsheet();
   await gshEnsureSheet(spreadsheetId, sheetTitle);
 
-  // Build rows
-  const header = [
-    ['КОРОЛЬ ПЛОЩАДКИ — ПРОТОКОЛ'],
-    [tournament.name || 'Турнир'],
-    [dateStr],
-    [],
-    ['Кортов', tournament.nc, 'Игроков на корт', tournament.ppc, 'Раундов сыграно', tournament.rPlayed, 'Сумма очков', tournament.totalScore],
-    [],
-    ['Место', 'Имя', 'Пол', 'Корт', 'Очки'],
-  ];
-  const rows = tournament.players.map((p, i) => [
-    i + 1,
-    p.name,
-    p.gender === 'M' ? 'Мужчины' : 'Женщины',
-    p.courtName || '—',
-    p.totalPts,
-  ]);
-  const allRows = [...header, ...rows];
+  // ── Helpers ──
+  function fmtTime(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+  const playersAll = tournament.players || [];
+  const playersM   = playersAll.filter(p => p.gender === 'M');
+  const playersW   = playersAll.filter(p => p.gender === 'W' || p.gender === 'F');
+
+  // ── Build main sheet rows ──
+  const rows = [];
+
+  // Title block
+  rows.push(['КОРОЛЬ ПЛОЩАДКИ — ПРОТОКОЛ']);
+  rows.push([tournament.name || 'Турнир']);
+  rows.push([dateStr, '', '', 'Начало', fmtTime(tournament.startTime), '', 'Окончание', fmtTime(tournament.savedAt)]);
+  rows.push([]);
+  rows.push(['Кортов', tournament.nc, 'Игроков на корт', tournament.ppc, 'Раундов сыграно', tournament.rPlayed, 'Сумма очков', tournament.totalScore]);
+  rows.push([]);
+
+  // Overall ranking
+  rows.push(['ОБЩИЙ РЕЙТИНГ']);
+  rows.push(['Место', 'Имя', 'Пол', 'Корт', 'Очки']);
+  playersAll.forEach((p, i) => rows.push([i + 1, p.name, p.gender === 'M' ? 'М' : 'Ж', p.courtName || '—', p.totalPts]));
+  rows.push([]);
+
+  // Men ranking
+  rows.push(['♂ МУЖЧИНЫ']);
+  rows.push(['Место', 'Имя', 'Корт', 'Очки']);
+  playersM.forEach((p, i) => rows.push([i + 1, p.name, p.courtName || '—', p.totalPts]));
+  rows.push([]);
+
+  // Women ranking
+  rows.push(['♀ ЖЕНЩИНЫ']);
+  rows.push(['Место', 'Имя', 'Корт', 'Очки']);
+  playersW.forEach((p, i) => rows.push([i + 1, p.name, p.courtName || '—', p.totalPts]));
+  rows.push([]);
+
+  // Rounds breakdown
+  const roundsData = tournament.roundsData || [];
+  if (roundsData.length > 0) {
+    rows.push(['РАЗБИВКА ПО РАУНДАМ']);
+    rows.push(['Корт', 'Раунд', 'Мужчина', 'Женщина', 'Очки']);
+    for (const court of roundsData) {
+      for (const round of court.rounds) {
+        for (const pair of round.pairs) {
+          rows.push([court.courtName, `Раунд ${round.ri + 1}`, pair.mName, pair.wName, pair.score]);
+        }
+      }
+    }
+    rows.push([]);
+  }
+
+  // Court stats
+  if (roundsData.length > 0) {
+    rows.push(['СТАТИСТИКА ПО КОРТАМ']);
+    rows.push(['Корт', 'Раундов', 'Сумма очков', 'Ср. очков/раунд', 'Лучшая пара']);
+    for (const court of roundsData) {
+      let totalPts = 0, roundCount = 0, bestScore = -1, bestPair = '—';
+      for (const round of court.rounds) {
+        roundCount++;
+        for (const pair of round.pairs) {
+          totalPts += pair.score;
+          if (pair.score > bestScore) {
+            bestScore = pair.score;
+            bestPair = `${pair.mName} + ${pair.wName} (${pair.score})`;
+          }
+        }
+      }
+      const avg = roundCount > 0 ? (totalPts / roundCount).toFixed(1) : '—';
+      rows.push([court.courtName, roundCount, totalPts, avg, bestPair]);
+    }
+  }
 
   await gshFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetTitle + '!A1')}:append?valueInputOption=USER_ENTERED&insertDataOption=OVERWRITE`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ values: allRows }),
-    }
+    { method: 'POST', body: JSON.stringify({ values: rows }) }
   );
 
-  // Format header rows bold + color
-  const sheetId = await gshFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`)
-    .then(m => m.sheets?.find(s => s.properties.title === sheetTitle)?.properties?.sheetId);
+  // ── Formatting ──
+  const meta = await gshFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties`);
+  const sheetId = meta.sheets?.find(s => s.properties.title === sheetTitle)?.properties?.sheetId;
 
   if (sheetId !== undefined) {
+    // Compute row indices of section headers for formatting
+    const overallHdrRow  = 7;  // "Место Имя Пол Корт Очки"
+    const mHdrRow        = overallHdrRow + playersAll.length + 2;
+    const wHdrRow        = mHdrRow + playersM.length + 2;
+    const roundsHdrRow   = roundsData.length > 0 ? wHdrRow + playersW.length + 2 : -1;
+    const courtsHdrRow   = roundsData.length > 0 ? roundsHdrRow + roundsData.reduce((s,c)=>s+c.rounds.reduce((a,r)=>a+r.pairs.length,0),0) + 2 : -1;
+
+    const mkSection = (r) => ({ repeatCell: { range:{sheetId,startRowIndex:r,endRowIndex:r+1}, cell:{userEnteredFormat:{
+      backgroundColor:{red:0.12,green:0.12,blue:0.22},
+      textFormat:{bold:true,foregroundColor:{red:0.53,green:0.53,blue:0.8}},
+    }}, fields:'userEnteredFormat' }});
+
+    const requests = [
+      // Title row
+      { repeatCell: { range:{sheetId,startRowIndex:0,endRowIndex:1}, cell:{userEnteredFormat:{
+        backgroundColor:{red:0.06,green:0.06,blue:0.1},
+        textFormat:{bold:true,fontSize:14,foregroundColor:{red:1,green:0.78,blue:0.2}},
+      }}, fields:'userEnteredFormat' }},
+      // Section labels
+      mkSection(6),   // ОБЩИЙ РЕЙТИНГ
+      mkSection(overallHdrRow),
+      mkSection(mHdrRow - 1),  // ♂ МУЖЧИНЫ
+      mkSection(mHdrRow),
+      mkSection(wHdrRow - 1),  // ♀ ЖЕНЩИНЫ
+      mkSection(wHdrRow),
+      // Auto-resize
+      { autoResizeDimensions: { dimensions:{sheetId,dimension:'COLUMNS',startIndex:0,endIndex:8} }},
+    ];
+    if (roundsHdrRow >= 0) {
+      requests.push(mkSection(roundsHdrRow - 1));  // РАЗБИВКА ПО РАУНДАМ
+      requests.push(mkSection(roundsHdrRow));
+    }
+    if (courtsHdrRow >= 0) {
+      requests.push(mkSection(courtsHdrRow - 1));  // СТАТИСТИКА ПО КОРТАМ
+      requests.push(mkSection(courtsHdrRow));
+    }
+
     await gshFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
       method: 'POST',
-      body: JSON.stringify({ requests: [
-        // Title row bold + yellow bg
-        { repeatCell: { range:{sheetId,startRowIndex:0,endRowIndex:1}, cell:{userEnteredFormat:{
-          backgroundColor:{red:0.06,green:0.06,blue:0.1},
-          textFormat:{bold:true,fontSize:14,foregroundColor:{red:1,green:0.78,blue:0.2}},
-        }}, fields:'userEnteredFormat' }},
-        // Column headers bold
-        { repeatCell: { range:{sheetId,startRowIndex:6,endRowIndex:7}, cell:{userEnteredFormat:{
-          backgroundColor:{red:0.12,green:0.12,blue:0.22},
-          textFormat:{bold:true,foregroundColor:{red:0.53,green:0.53,blue:0.8}},
-        }}, fields:'userEnteredFormat' }},
-        // Auto-resize columns
-        { autoResizeDimensions: { dimensions:{sheetId,dimension:'COLUMNS',startIndex:0,endIndex:5} }},
-      ]})
+      body: JSON.stringify({ requests }),
     });
   }
 
@@ -3236,9 +3635,10 @@ function scoreClickHandler(e) {
     const base = old === null ? (dir > 0 ? 0 : -1) : old;
     const next = Math.max(0, Math.min(15, base + dir));
     if (old !== null && next === old) return;
+    const delta_div = next - (old ?? 0);
     divScores[divKey][mi][ri] = next;
     scoreTs[divKey] = Date.now();
-    updateDivWidget(divKey, mi, ri, next);
+    updateDivWidget(divKey, mi, ri, next, delta_div);
     saveState();
   } else {
     // Court score
@@ -3247,15 +3647,17 @@ function scoreClickHandler(e) {
     const base = old === null ? (dir > 0 ? 0 : -1) : old;
     const next = Math.max(0, Math.min(15, base + dir));
     if (old !== null && next === old) return;
+    const delta_court = next - (old ?? 0);
+    if (!tournamentStartTime) tournamentStartTime = new Date().toISOString();
     scores[ci][mi][ri] = next;
     scoreTs['c'+ci] = Date.now();
-    updateCourtWidget(ci, mi, ri, next);
+    updateCourtWidget(ci, mi, ri, next, delta_court);
     updateDivisions(); // recompute on every score change
     saveState();
   }
 }
 
-function updateCourtWidget(ci, mi, ri, val) {
+function updateCourtWidget(ci, mi, ri, val, delta) {
   const mx = val>=15, zr = val===0;
   // Score display
   const sd = document.getElementById(`sd-${ci}-${mi}-${ri}`);
@@ -3282,9 +3684,14 @@ function updateCourtWidget(ci, mi, ri, val) {
   // Instantly unlock next round button if this was the first score
   const courtNav = document.getElementById(`rnd-nav-${ci}`);
   if (courtNav) courtNav.innerHTML = renderCourtNavInner(ci);
+  // History log
+  if (delta !== undefined) {
+    const playerName = ALL_COURTS[ci]?.men?.[mi] || `М${mi+1}`;
+    addHistoryEntry(COURT_META[ci]?.name || `Корт ${ci+1}`, playerName, delta, val);
+  }
 }
 
-function updateDivWidget(key, mi, ri, val) {
+function updateDivWidget(key, mi, ri, val, delta) {
   const Nd = divRoster[key].men.length;
   const mx = val>=15, zr = val===0;
   const sd = document.getElementById(`dsd-${key}-${mi}-${ri}`);
@@ -3324,6 +3731,12 @@ function updateDivWidget(key, mi, ri, val) {
   const dci    = DIV_TIMER_IDX[key];
   const divNav = document.getElementById(`rnd-nav-${dci}`);
   if (divNav) divNav.innerHTML = renderDivNavInner(key);
+  // History log
+  if (delta !== undefined) {
+    const divLabels = { hard:'Хард', advance:'Адванс', medium:'Медиум', lite:'Лайт' };
+    const playerName = divRoster[key]?.men?.[mi] || `М${mi+1}`;
+    addHistoryEntry(divLabels[key] || key, playerName, delta, val);
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3362,6 +3775,24 @@ function pbCls(p){ return p===1?'pb1':p===2?'pb2':p===3?'pb3':'pbn'; }
 function esc(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
 
 let _toastTimer=null;
+function showInfo() {
+  // Render dynamic ppc-based division ranges
+  const box = document.getElementById('info-box');
+  box.querySelectorAll('.info-div-row span:last-child').forEach((el, i) => {
+    const labels = [
+      `Места 1–${ppc} — сильнейшие`,
+      `Места ${ppc+1}–${ppc*2} (при 4 кортах)`,
+      `Места ${ppc*2+1}–${ppc*3}`,
+      `Места ${ppc*3+1}+ — оставшиеся`,
+    ];
+    if (labels[i]) el.textContent = labels[i];
+  });
+  document.getElementById('info-overlay').classList.add('open');
+}
+function closeInfo() {
+  document.getElementById('info-overlay').classList.remove('open');
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -3394,7 +3825,7 @@ if ('serviceWorker' in navigator) {
 // Each court has an independent timer that persists across tab switches.
 // Uses Date.now() anchoring so background/lock screen won't drift.
 // ════════════════════════════════════════════════════════════
-const TIMER_PRESETS = [10, 12, 15]; // minutes
+const TIMER_PRESETS = [5, 10, 15]; // minutes
 let timerTs = Array(8).fill(0); // last-action timestamp per timer (for smart merge)
 const timerState = Array.from({length:8}, () => ({  // 0-3: корты, 4-7: дивизионы
   preset:   10,           // selected preset in minutes
@@ -3514,9 +3945,23 @@ function timerTick() {
       ts.remaining = 0;
       playEndSignal();
       saveTimerState();
+      // Auto-round: fire once (ci=0 is always the first active court)
+      if (ci === 0 && roundAuto.active && roundAuto.phase === 'playing') {
+        const cb = roundAuto._endCallback;
+        roundAuto._endCallback = null;
+        if (cb) cb(); else scheduleNextRound();
+      }
     }
     updateTimerUI(ci);
   });
+  // Break countdown display update
+  if (roundAuto.phase === 'break' && roundAuto.breakEnd) {
+    const rem = Math.max(0, Math.ceil((roundAuto.breakEnd - now) / 1000));
+    for (let i = 0; i < 4; i++) {
+      const el = document.getElementById(`rnd-break-disp-${i}`);
+      if (el) el.textContent = rem + 'с';
+    }
+  }
   // Сохраняем состояние раз в секунду пока хоть один таймер запущен
   if (anyRunning && now - _timerLastSave > 1000) {
     _timerLastSave = now;
@@ -3706,7 +4151,7 @@ function timerSetPreset(ci, minutes) {
 function timerCustomStep(ci, step) {
   const ts = timerState[ci];
   const cur = ts.preset;
-  const next = Math.min(20, Math.max(9, cur + step));
+  const next = Math.min(20, Math.max(2, cur + step));
   if (next === cur) return;
   timerSetPreset(ci, next);
   // обновляем отображение кастомного поля для всей группы
@@ -3752,8 +4197,161 @@ function renderTimerBlock(ci, roundNavHtml='') {
       </div>
     </div>
     ${roundNavHtml ? `<div class="round-nav-inner" id="rnd-nav-${ci}">${roundNavHtml}</div>` : ''}
+    ${ci < 4 ? `<div class="round-auto-bar" id="round-auto-bar-${ci}">${_renderRoundAutoContent(ci)}</div>` : ''}
   </div>`;
 }
+// ════════════════════════════════════════════════════════════
+// 21. AUTO-ROUND PROGRESSION MODULE
+// Manages automatic round sequencing for courts 1–4 (ci 0–3).
+// Judge manually starts Round 1; subsequent rounds start automatically
+// after a ROUND_BREAK_SEC second break when the timer expires.
+// ════════════════════════════════════════════════════════════
+const ROUND_BREAK_SEC = 40;   // seconds of rest between rounds
+
+const roundAuto = {
+  active:   false,   // auto-progression enabled
+  round:    -1,      // current round index (0-based), -1 = not started
+  phase:    'idle',  // 'idle' | 'playing' | 'break' | 'done'
+  breakEnd: null,    // Date.now() target for end of break
+  _timeout: null,    // handle for next-round setTimeout
+};
+
+// ── startTimer(duration, callback) ───────────────────────────
+// Starts the shared court timer for `duration` seconds.
+// Calls `callback` when the timer naturally reaches zero (via timerTick).
+// Note: callback is wired through roundAuto so only one fires per expiry.
+function startTimer(duration, callback) {
+  roundAuto._endCallback = callback;
+  const now = Date.now();
+  for (let ci = 0; ci < nc; ci++) {
+    const ts = timerState[ci];
+    ts.running        = true;
+    ts.total          = duration;
+    ts.remaining      = duration;
+    ts.startedAt      = now;
+    ts.startRemaining = duration;
+    ts._w60           = false;
+    ts._w20           = false;
+    timerTs[ci]       = now;
+    updateTimerUI(ci);
+  }
+  // Ensure unused courts (ci >= nc) are stopped
+  for (let ci = nc; ci < 4; ci++) {
+    timerState[ci].running = false;
+  }
+  saveTimerState();
+  try { getAudioCtx().resume(); } catch(e) {}
+}
+
+// ── scheduleNextRound() ───────────────────────────────────────
+// Called when the current round's timer expires.
+// Waits ROUND_BREAK_SEC seconds then automatically starts the next round.
+function scheduleNextRound() {
+  if (!roundAuto.active) return;
+  roundAuto.phase   = 'break';
+  roundAuto.breakEnd = Date.now() + ROUND_BREAK_SEC * 1000;
+  updateRoundAutoUI();
+  clearTimeout(roundAuto._timeout);
+  roundAuto._timeout = setTimeout(() => {
+    if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
+  }, ROUND_BREAK_SEC * 1000);
+}
+
+// ── startTimerForRound(roundIndex) ────────────────────────────
+// Switches all courts to `roundIndex`, starts fresh timers, highlights
+// the active round button in the round navigation.
+function startTimerForRound(roundIndex) {
+  if (roundIndex >= ppc) {
+    roundAuto.phase  = 'done';
+    roundAuto.active = false;
+    updateRoundAutoUI();
+    showToast('🏁 Все раунды завершены!');
+    return;
+  }
+  roundAuto.round = roundIndex;
+  roundAuto.phase = 'playing';
+
+  // Move all active courts to this round (skip double-tap guard)
+  for (let ci = 0; ci < nc; ci++) {
+    courtRound[ci] = roundIndex;
+    const s = document.getElementById(`screen-${ci}`);
+    if (s && s.innerHTML) s.innerHTML = renderCourt(ci);
+  }
+
+  // Start fresh timer using the existing preset duration
+  const dur = timerState[0].total;
+  startTimer(dur, scheduleNextRound);
+
+  // Highlight the active round button on all court round navs
+  for (let ci = 0; ci < nc; ci++) {
+    for (let i = 0; i < ppc; i++) {
+      const btn = document.getElementById(`rnd-${ci}-${i}`);
+      if (btn) btn.classList.toggle('active', i === roundIndex);
+    }
+  }
+
+  updateRoundAutoUI();
+  showToast(`▶ Раунд ${roundIndex + 1} из ${ppc}`);
+}
+
+// ── judgeStartsFirstRound() ───────────────────────────────────
+// Called when the judge manually presses "СТАРТ РАУНД 1".
+// Activates auto-round mode and starts Round 1 on all courts.
+function judgeStartsFirstRound() {
+  roundAuto.active = true;
+  startTimerForRound(0);
+}
+
+// ── stopRoundAuto() ───────────────────────────────────────────
+// Cancels auto-round progression (does not stop the running timer).
+function stopRoundAuto() {
+  clearTimeout(roundAuto._timeout);
+  roundAuto._timeout    = null;
+  roundAuto._endCallback = null;
+  roundAuto.active      = false;
+  roundAuto.phase       = 'idle';
+  roundAuto.breakEnd    = null;
+  updateRoundAutoUI();
+}
+
+// ── _renderRoundAutoContent(ci) ──────────────────────────────
+// Returns the inner HTML for the auto-round bar at its current state.
+// Called from renderTimerBlock (static render) and updateRoundAutoUI (dynamic update).
+function _renderRoundAutoContent(ci) {
+  if (roundAuto.phase === 'playing' && roundAuto.active) {
+    return `<div class="round-auto-status">
+      <span class="rnd-label">▶ Раунд ${roundAuto.round + 1} / ${ppc}</span>
+      <button class="timer-btn timer-btn-reset" onclick="stopRoundAuto()" title="Остановить авто-режим">✕</button>
+    </div>`;
+  }
+  if (roundAuto.phase === 'break' && roundAuto.active) {
+    const rem = roundAuto.breakEnd ? Math.max(0, Math.ceil((roundAuto.breakEnd - Date.now()) / 1000)) : ROUND_BREAK_SEC;
+    return `<div class="round-auto-status break">
+      <span class="rnd-label">⏸ Перерыв: <span id="rnd-break-disp-${ci}">${rem}</span>с → Раунд ${roundAuto.round + 2}</span>
+      <button class="timer-btn timer-btn-reset" onclick="stopRoundAuto()" title="Остановить авто-режим">✕</button>
+    </div>`;
+  }
+  if (roundAuto.phase === 'done') {
+    return `<div class="round-auto-status done">
+      <span class="rnd-label">🏁 Все раунды завершены</span>
+      <button class="round-auto-start-btn" style="width:auto;padding:4px 14px" onclick="judgeStartsFirstRound()">↺ СНАЧАЛА</button>
+    </div>`;
+  }
+  // idle or inactive — show the judge start button
+  return `<button class="round-auto-start-btn" onclick="judgeStartsFirstRound()">▶ СТАРТ РАУНД 1</button>`;
+}
+
+// ── updateRoundAutoUI() ───────────────────────────────────────
+// Refreshes all four auto-round bar elements without full screen re-render.
+function updateRoundAutoUI() {
+  for (let ci = 0; ci < 4; ci++) {
+    const bar = document.getElementById(`round-auto-bar-${ci}`);
+    if (bar) bar.innerHTML = _renderRoundAutoContent(ci);
+  }
+}
+
+// Wire the timerTick end-callback (called from timerTick when ci=0 expires)
+// roundAuto._endCallback is set by startTimer()
 // ════════════════════════════════════════════════════════════
 // 22. INIT
 // ════════════════════════════════════════════════════════════
@@ -3789,6 +4387,49 @@ timerTick(); // start global animation loop
       <button id="confirm-cancel">Отмена</button>
       <button id="confirm-ok">ОК</button>
     </div>
+  </div>
+</div>
+<!-- Info / rules modal -->
+<div id="info-overlay" onclick="if(event.target===this)closeInfo()">
+  <div id="info-box">
+    <h2>📋 КАК ИГРАТЬ</h2>
+    <div class="info-sub">King of the Court — смешанные пары</div>
+
+    <h3>⚽ Формат матча</h3>
+    <p>Каждый раунд — <strong>одна пара</strong> (мужчина + женщина) против всего двора. Зарабатывай очки от <strong>0 до 15</strong> за раунд кнопками <strong>+</strong> и <strong>−</strong>.</p>
+
+    <h3>🔄 Ротация пар</h3>
+    <p>В каждом раунде пары меняются автоматически — за весь этап каждый мужчина сыграет в паре с каждой женщиной ровно по одному разу.</p>
+    <p>Очки женщины выставляются <strong>автоматически</strong> (AUTO) — равны очкам её партнёра в этом раунде.</p>
+
+    <h3>📊 Рейтинг этапа 1</h3>
+    <ul>
+      <li>Основной критерий — <strong>сумма очков</strong> за все раунды</li>
+      <li>При равенстве: лучший раунд → количество побед (раунд ≥ 8 очков)</li>
+      <li>Общий рейтинг строится по всем кортам вместе</li>
+    </ul>
+
+    <h3>🏆 Дивизионы (Финалы)</h3>
+    <p>После Этапа 1 игроки распределяются по дивизионам:</p>
+    <div class="info-div">
+      <div class="info-div-row"><span class="tag tag-hard">🔥 HARD</span><span>Места 1–5 — сильнейшие</span></div>
+      <div class="info-div-row"><span class="tag tag-adv">⚡ ADVANCE</span><span>Места 6–10 (при 4 кортах)</span></div>
+      <div class="info-div-row"><span class="tag tag-med">⚙️ MEDIUM</span><span>Места 11–15</span></div>
+      <div class="info-div-row"><span class="tag tag-lite">🍀 LITE</span><span>Места 16+ — оставшиеся</span></div>
+    </div>
+    <p>Финалы — тот же формат (раунды 0–15), но внутри своего дивизиона.</p>
+
+    <h3>📱 Вкладки</h3>
+    <ul>
+      <li><strong>К1 / К2 / К3</strong> — вводить очки на кортах Этапа 1</li>
+      <li><strong>HARD / MEDIUM / LITE</strong> — финалы дивизионов</li>
+      <li><strong>СВОД</strong> — общий рейтинг и итоги финала</li>
+      <li><strong>СТАТ</strong> — подробная статистика игроков</li>
+    </ul>
+
+    <div class="info-tip">💡 Переключение раунда требует <strong>двойного нажатия</strong> — сначала кнопка станет «✓», затем подтверди ещё раз.</div>
+
+    <button id="info-close" onclick="closeInfo()">Закрыть</button>
   </div>
 </div>
 <script>
