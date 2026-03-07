@@ -1144,6 +1144,24 @@ body{
   transition:width .5s linear, background .3s;
 }
 .timer-progress-fill.danger{background:#e94560}
+/* ── AUTO-ROUND BAR ──────────────────────────────────────── */
+.round-auto-bar{margin-top:8px;border-top:1px solid #2a2a45;padding-top:8px;}
+.round-auto-status{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;
+  color:var(--text);
+}
+.round-auto-status .rnd-label{flex:1}
+.round-auto-status.break .rnd-label{color:#4DA8DA}
+.round-auto-status.done  .rnd-label{color:var(--muted)}
+.round-auto-start-btn{
+  width:100%;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;
+  padding:8px 0;border-radius:8px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#1a6b35,#156128);color:#7fffaa;
+  letter-spacing:.5px;transition:opacity .15s;
+}
+.round-auto-start-btn:active{opacity:.75}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -3915,9 +3933,23 @@ function timerTick() {
       ts.remaining = 0;
       playEndSignal();
       saveTimerState();
+      // Auto-round: fire once (ci=0 is always the first active court)
+      if (ci === 0 && roundAuto.active && roundAuto.phase === 'playing') {
+        const cb = roundAuto._endCallback;
+        roundAuto._endCallback = null;
+        if (cb) cb(); else scheduleNextRound();
+      }
     }
     updateTimerUI(ci);
   });
+  // Break countdown display update
+  if (roundAuto.phase === 'break' && roundAuto.breakEnd) {
+    const rem = Math.max(0, Math.ceil((roundAuto.breakEnd - now) / 1000));
+    for (let i = 0; i < 4; i++) {
+      const el = document.getElementById(`rnd-break-disp-${i}`);
+      if (el) el.textContent = rem + 'с';
+    }
+  }
   // Сохраняем состояние раз в секунду пока хоть один таймер запущен
   if (anyRunning && now - _timerLastSave > 1000) {
     _timerLastSave = now;
@@ -4153,8 +4185,161 @@ function renderTimerBlock(ci, roundNavHtml='') {
       </div>
     </div>
     ${roundNavHtml ? `<div class="round-nav-inner" id="rnd-nav-${ci}">${roundNavHtml}</div>` : ''}
+    ${ci < 4 ? `<div class="round-auto-bar" id="round-auto-bar-${ci}">${_renderRoundAutoContent(ci)}</div>` : ''}
   </div>`;
 }
+// ════════════════════════════════════════════════════════════
+// 21. AUTO-ROUND PROGRESSION MODULE
+// Manages automatic round sequencing for courts 1–4 (ci 0–3).
+// Judge manually starts Round 1; subsequent rounds start automatically
+// after a ROUND_BREAK_SEC second break when the timer expires.
+// ════════════════════════════════════════════════════════════
+const ROUND_BREAK_SEC = 40;   // seconds of rest between rounds
+
+const roundAuto = {
+  active:   false,   // auto-progression enabled
+  round:    -1,      // current round index (0-based), -1 = not started
+  phase:    'idle',  // 'idle' | 'playing' | 'break' | 'done'
+  breakEnd: null,    // Date.now() target for end of break
+  _timeout: null,    // handle for next-round setTimeout
+};
+
+// ── startTimer(duration, callback) ───────────────────────────
+// Starts the shared court timer for `duration` seconds.
+// Calls `callback` when the timer naturally reaches zero (via timerTick).
+// Note: callback is wired through roundAuto so only one fires per expiry.
+function startTimer(duration, callback) {
+  roundAuto._endCallback = callback;
+  const now = Date.now();
+  for (let ci = 0; ci < nc; ci++) {
+    const ts = timerState[ci];
+    ts.running        = true;
+    ts.total          = duration;
+    ts.remaining      = duration;
+    ts.startedAt      = now;
+    ts.startRemaining = duration;
+    ts._w60           = false;
+    ts._w20           = false;
+    timerTs[ci]       = now;
+    updateTimerUI(ci);
+  }
+  // Ensure unused courts (ci >= nc) are stopped
+  for (let ci = nc; ci < 4; ci++) {
+    timerState[ci].running = false;
+  }
+  saveTimerState();
+  try { getAudioCtx().resume(); } catch(e) {}
+}
+
+// ── scheduleNextRound() ───────────────────────────────────────
+// Called when the current round's timer expires.
+// Waits ROUND_BREAK_SEC seconds then automatically starts the next round.
+function scheduleNextRound() {
+  if (!roundAuto.active) return;
+  roundAuto.phase   = 'break';
+  roundAuto.breakEnd = Date.now() + ROUND_BREAK_SEC * 1000;
+  updateRoundAutoUI();
+  clearTimeout(roundAuto._timeout);
+  roundAuto._timeout = setTimeout(() => {
+    if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
+  }, ROUND_BREAK_SEC * 1000);
+}
+
+// ── startTimerForRound(roundIndex) ────────────────────────────
+// Switches all courts to `roundIndex`, starts fresh timers, highlights
+// the active round button in the round navigation.
+function startTimerForRound(roundIndex) {
+  if (roundIndex >= ppc) {
+    roundAuto.phase  = 'done';
+    roundAuto.active = false;
+    updateRoundAutoUI();
+    showToast('🏁 Все раунды завершены!');
+    return;
+  }
+  roundAuto.round = roundIndex;
+  roundAuto.phase = 'playing';
+
+  // Move all active courts to this round (skip double-tap guard)
+  for (let ci = 0; ci < nc; ci++) {
+    courtRound[ci] = roundIndex;
+    const s = document.getElementById(`screen-${ci}`);
+    if (s && s.innerHTML) s.innerHTML = renderCourt(ci);
+  }
+
+  // Start fresh timer using the existing preset duration
+  const dur = timerState[0].total;
+  startTimer(dur, scheduleNextRound);
+
+  // Highlight the active round button on all court round navs
+  for (let ci = 0; ci < nc; ci++) {
+    for (let i = 0; i < ppc; i++) {
+      const btn = document.getElementById(`rnd-${ci}-${i}`);
+      if (btn) btn.classList.toggle('active', i === roundIndex);
+    }
+  }
+
+  updateRoundAutoUI();
+  showToast(`▶ Раунд ${roundIndex + 1} из ${ppc}`);
+}
+
+// ── judgeStartsFirstRound() ───────────────────────────────────
+// Called when the judge manually presses "СТАРТ РАУНД 1".
+// Activates auto-round mode and starts Round 1 on all courts.
+function judgeStartsFirstRound() {
+  roundAuto.active = true;
+  startTimerForRound(0);
+}
+
+// ── stopRoundAuto() ───────────────────────────────────────────
+// Cancels auto-round progression (does not stop the running timer).
+function stopRoundAuto() {
+  clearTimeout(roundAuto._timeout);
+  roundAuto._timeout    = null;
+  roundAuto._endCallback = null;
+  roundAuto.active      = false;
+  roundAuto.phase       = 'idle';
+  roundAuto.breakEnd    = null;
+  updateRoundAutoUI();
+}
+
+// ── _renderRoundAutoContent(ci) ──────────────────────────────
+// Returns the inner HTML for the auto-round bar at its current state.
+// Called from renderTimerBlock (static render) and updateRoundAutoUI (dynamic update).
+function _renderRoundAutoContent(ci) {
+  if (roundAuto.phase === 'playing' && roundAuto.active) {
+    return `<div class="round-auto-status">
+      <span class="rnd-label">▶ Раунд ${roundAuto.round + 1} / ${ppc}</span>
+      <button class="timer-btn timer-btn-reset" onclick="stopRoundAuto()" title="Остановить авто-режим">✕</button>
+    </div>`;
+  }
+  if (roundAuto.phase === 'break' && roundAuto.active) {
+    const rem = roundAuto.breakEnd ? Math.max(0, Math.ceil((roundAuto.breakEnd - Date.now()) / 1000)) : ROUND_BREAK_SEC;
+    return `<div class="round-auto-status break">
+      <span class="rnd-label">⏸ Перерыв: <span id="rnd-break-disp-${ci}">${rem}</span>с → Раунд ${roundAuto.round + 2}</span>
+      <button class="timer-btn timer-btn-reset" onclick="stopRoundAuto()" title="Остановить авто-режим">✕</button>
+    </div>`;
+  }
+  if (roundAuto.phase === 'done') {
+    return `<div class="round-auto-status done">
+      <span class="rnd-label">🏁 Все раунды завершены</span>
+      <button class="round-auto-start-btn" style="width:auto;padding:4px 14px" onclick="judgeStartsFirstRound()">↺ СНАЧАЛА</button>
+    </div>`;
+  }
+  // idle or inactive — show the judge start button
+  return `<button class="round-auto-start-btn" onclick="judgeStartsFirstRound()">▶ СТАРТ РАУНД 1</button>`;
+}
+
+// ── updateRoundAutoUI() ───────────────────────────────────────
+// Refreshes all four auto-round bar elements without full screen re-render.
+function updateRoundAutoUI() {
+  for (let ci = 0; ci < 4; ci++) {
+    const bar = document.getElementById(`round-auto-bar-${ci}`);
+    if (bar) bar.innerHTML = _renderRoundAutoContent(ci);
+  }
+}
+
+// Wire the timerTick end-callback (called from timerTick when ci=0 expires)
+// roundAuto._endCallback is set by startTimer()
 // ════════════════════════════════════════════════════════════
 // 22. INIT
 // ════════════════════════════════════════════════════════════
