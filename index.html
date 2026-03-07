@@ -1956,6 +1956,17 @@ function applyRoster() {
   showToast('✅ Ростер сохранён');
 }
 
+async function clearRosterNames() {
+  if (!await showConfirm('Очистить состав?\n\nВсе имена будут удалены — можно вписать новых игроков.')) return;
+  for (let ci = 0; ci < 4; ci++) {
+    ALL_COURTS[ci].men   = Array.from({length: ppc}, () => '');
+    ALL_COURTS[ci].women = Array.from({length: ppc}, () => '');
+  }
+  localStorage.removeItem('kotc3_roster'); // убираем кэш чтобы не вернулся при перезагрузке
+  switchTab('roster');
+  showToast('🧹 Состав очищен');
+}
+
 async function resetRosterNames() {
   if (!await showConfirm('Сбросить имена к стандартным?')) return;
   const defaults = [
@@ -2053,7 +2064,8 @@ function renderRoster() {
 
   html += `<div class="roster-save-bar">
     <button class="btn-rsr primary"   onclick="applyRoster()">✅ Сохранить</button>
-    <button class="btn-rsr sec"       onclick="resetRosterNames()">↺ Сброс имён</button>
+    <button class="btn-rsr sec"       onclick="clearRosterNames()">🧹 Новый состав</button>
+    <button class="btn-rsr sec"       onclick="resetRosterNames()">↺ Стандарт</button>
   </div>
   <button class="btn-finish" onclick="finishTournament()">
     🏁 ЗАВЕРШИТЬ ТУРНИР
