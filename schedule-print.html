@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Расписание — King of the Court</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    color: #000;
+    background: #fff;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 12mm 14mm;
+    margin: 0 auto;
+    page-break-after: always;
+  }
+
+  .page:last-child { page-break-after: avoid; }
+
+  /* ── Header ── */
+  .court-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 3px solid currentColor;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+
+  .court-title {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 1px;
+  }
+
+  .court-subtitle {
+    font-size: 12px;
+    color: #555;
+    margin-top: 2px;
+  }
+
+  /* ── Round table ── */
+  .round-block {
+    margin-bottom: 12px;
+    break-inside: avoid;
+  }
+
+  .round-title {
+    font-size: 13px;
+    font-weight: 700;
+    background: #222;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px 4px 0 0;
+    letter-spacing: 0.5px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+    border-top: none;
+  }
+
+  th {
+    background: #f0f0f0;
+    font-weight: 700;
+    font-size: 11px;
+    text-align: center;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+  }
+
+  .num { text-align: center; color: #888; font-size: 11px; width: 28px; }
+
+  .player-m { font-weight: 700; font-size: 13px; }
+  .player-w { font-size: 12px; color: #333; }
+
+  .pair-cell { line-height: 1.4; }
+
+  .plus-sign {
+    display: inline-block;
+    font-weight: 900;
+    color: #aaa;
+    margin: 0 4px;
+    font-size: 12px;
+  }
+
+  .score-box {
+    width: 52px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 900;
+    color: #ccc;
+    letter-spacing: 4px;
+  }
+
+  tr:nth-child(even) td { background: #fafafa; }
+
+  /* court colors */
+  .c1 { color: #b8860b; border-color: #FFD700; }
+  .c1 .round-title { background: #b8860b; }
+  .c1 table { border-color: #FFD700; }
+  .c1 th { background: #fffbe6; border-color: #FFD700; }
+  .c1 td { border-color: #ffe88a; }
+  .c1 tr:nth-child(even) td { background: #fffbe6; }
+
+  .c2 { color: #1a6fa0; border-color: #4DA8DA; }
+  .c2 .round-title { background: #1a6fa0; }
+  .c2 table { border-color: #4DA8DA; }
+  .c2 th { background: #e8f4fb; border-color: #4DA8DA; }
+  .c2 td { border-color: #a8d4ee; }
+  .c2 tr:nth-child(even) td { background: #e8f4fb; }
+
+  .c3 { color: #2e7d32; border-color: #6ABF69; }
+  .c3 .round-title { background: #2e7d32; }
+  .c3 table { border-color: #6ABF69; }
+  .c3 th { background: #e8f5e9; border-color: #6ABF69; }
+  .c3 td { border-color: #a5d6a7; }
+  .c3 tr:nth-child(even) td { background: #e8f5e9; }
+
+  .footer {
+    margin-top: 14px;
+    font-size: 10px;
+    color: #aaa;
+    text-align: right;
+  }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; padding: 10mm 12mm; }
+    @page { size: A4 portrait; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<script>
+// ══════════════════════════════════════════════
+// Данные турнира (скопировано из приложения)
+// ══════════════════════════════════════════════
+const courts = [
+  {
+    name: 'КОРТ 1',
+    cls:  'c1',
+    men:   ['Яковлев','Жидков','Алик','Куанбеков','Юшманов'],
+    women: ['Лебедева','Арефьева Лера','Настя НМ','Сайдуллина','Маргарита']
+  },
+  {
+    name: 'КОРТ 2',
+    cls:  'c2',
+    men:   ['Обухов','Соболев','Иванов','Грузин','Шперлинг'],
+    women: ['Шперлинг','Шерметова','Сабанцева','Микишева','Базутова']
+  },
+  {
+    name: 'КОРТ 3',
+    cls:  'c3',
+    men:   ['Сайдуллин','Лебедев','Камалов','Анашкин','Привет'],
+    women: ['Носкова','Чемерис Влада','Кузьмина','Яковлева','Маша Привет']
+  }
+];
+
+const ppc = 5; // игроков на корт каждого пола
+
+function partnerW(mi, ri) { return (mi + ri) % ppc; }
+
+function renderCourt(ct) {
+  const rounds = Array.from({length: ppc}, (_, ri) => {
+    const rows = Array.from({length: ppc}, (_, mi) => {
+      const wi = partnerW(mi, ri);
+      return `<tr>
+        <td class="num">${mi + 1}</td>
+        <td class="pair-cell">
+          <span class="player-m">🏋️ ${ct.men[mi]}</span>
+          <span class="plus-sign">+</span>
+          <span class="player-w">👩 ${ct.women[wi]}</span>
+        </td>
+        <td class="score-box">__</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="round-block">
+      <div class="round-title">РАУНД ${ri + 1}</div>
+      <table>
+        <thead><tr>
+          <th>#</th>
+          <th>Пара</th>
+          <th>Очки</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  return `<div class="page ${ct.cls}">
+    <div class="court-header">
+      <div>
+        <div class="court-title">${ct.name}</div>
+        <div class="court-subtitle">King of the Court — ${ppc} раундов × ${ppc} пар</div>
+      </div>
+    </div>
+    ${rounds}
+    <div class="footer">Распечатано: ${new Date().toLocaleDateString('ru-RU')}</div>
+  </div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.innerHTML = courts.map(renderCourt).join('');
+});
+</script>
+</body>
+</html>
