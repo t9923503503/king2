@@ -4030,6 +4030,12 @@ function saveTimerState() {
       startRemaining: ts.startRemaining,
     }));
     localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(snapshot));
+    localStorage.setItem('kotc_roundauto_v1', JSON.stringify({
+      active:   roundAuto.active,
+      round:    roundAuto.round,
+      phase:    roundAuto.phase,
+      breakEnd: roundAuto.breakEnd,
+    }));
   } catch(e) {}
 }
 
@@ -4260,6 +4266,7 @@ function scheduleNextRound() {
   roundAuto._timeout = setTimeout(() => {
     if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
   }, ROUND_BREAK_SEC * 1000);
+  saveTimerState();
 }
 
 // ── startTimerForRound(roundIndex) ────────────────────────────
@@ -4317,6 +4324,7 @@ function stopRoundAuto() {
   roundAuto.phase       = 'idle';
   roundAuto.breakEnd    = null;
   updateRoundAutoUI();
+  saveTimerState();
 }
 
 // ── _renderRoundAutoContent(ci) ──────────────────────────────
@@ -4355,6 +4363,39 @@ function updateRoundAutoUI() {
   }
 }
 
+// ── restoreRoundAutoState() ───────────────────────────────────
+// Called after buildAll() on page load to reconnect roundAuto callbacks
+// that can't be persisted (setTimeout handles, function references).
+function restoreRoundAutoState() {
+  try {
+    const raw = localStorage.getItem('kotc_roundauto_v1');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    roundAuto.active   = !!s.active;
+    roundAuto.round    = (s.round !== undefined && s.round !== null) ? s.round : -1;
+    roundAuto.phase    = s.phase || 'idle';
+    roundAuto.breakEnd = s.breakEnd || null;
+
+    if (roundAuto.active && roundAuto.phase === 'playing') {
+      // Timer is still running (restored by loadTimerState); reconnect end-callback
+      roundAuto._endCallback = scheduleNextRound;
+    } else if (roundAuto.active && roundAuto.phase === 'break' && roundAuto.breakEnd) {
+      const remaining = roundAuto.breakEnd - Date.now();
+      if (remaining > 0) {
+        clearTimeout(roundAuto._timeout);
+        roundAuto._timeout = setTimeout(() => {
+          if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
+        }, remaining);
+      } else {
+        // Break ended while page was closed — start next round immediately
+        if (roundAuto.active) startTimerForRound(roundAuto.round + 1);
+        return; // startTimerForRound calls updateRoundAutoUI
+      }
+    }
+    updateRoundAutoUI();
+  } catch(e) {}
+}
+
 // Wire the timerTick end-callback (called from timerTick when ci=0 expires)
 // roundAuto._endCallback is set by startTimer()
 // ════════════════════════════════════════════════════════════
@@ -4369,6 +4410,7 @@ if (!tournamentMeta.date) tournamentMeta.date = new Date().toISOString().split('
 // DOM строим до сетевых запросов, чтобы не было пустого экрана
 buildAll();
 switchTab(activeTabId || 0);
+restoreRoundAutoState(); // восстанавливаем состояние авто-раундов после перезагрузки
 // После первичной отрисовки — подключаемся к Supabase
 if (sbConfig.roomCode) sbConnect();
 timerTick(); // start global animation loop
